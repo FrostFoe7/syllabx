@@ -3,12 +3,11 @@
 import { useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { useUser, useDatabases, useDoc, appwriteConfig } from '@/appwrite';
+import { useUser, useDatabases, useDoc, useCollection, appwriteConfig } from '@/appwrite';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { allCourses } from '@/lib/courses';
 import { BookOpen, Calendar } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -23,6 +22,10 @@ export default function DashboardCoursesPage() {
   const { data: userData, isLoading: isDataLoading } = useDoc<any>(
     appwriteConfig.usersCollectionId, 
     user?.$id || null
+  );
+
+  const { data: allCourses, isLoading: isCoursesLoading } = useCollection<any>(
+      appwriteConfig.coursesCollectionId
   );
 
   // Handle auto-enrollment from URL query parameter
@@ -94,7 +97,7 @@ export default function DashboardCoursesPage() {
     }
   }, [user, isUserLoading, isDataLoading, userData, searchParams, databases, router, toast]);
 
-  if (isUserLoading || isDataLoading) {
+  if (isUserLoading || isDataLoading || isCoursesLoading) {
     return (
        <>
         <h1 className="text-3xl font-bold mb-8 font-tiro-bangla">আমার কোর্সসমূহ</h1>
@@ -120,7 +123,7 @@ export default function DashboardCoursesPage() {
   }
 
   const enrolledCourseNames = userData?.enrolledCourses || [];
-  const enrolledCourses = allCourses.filter(course => enrolledCourseNames.includes(course.title));
+  const enrolledCourses = allCourses?.filter(course => enrolledCourseNames.includes(course.title)) || [];
 
   return (
     <>
@@ -129,7 +132,7 @@ export default function DashboardCoursesPage() {
       {enrolledCourses.length > 0 ? (
         <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
           {enrolledCourses.map((course) => (
-            <Card key={course.id} className="overflow-hidden shadow-lg transition-all hover:shadow-xl bg-white rounded-2xl flex flex-col md:flex-row">
+            <Card key={course.$id} className="overflow-hidden shadow-lg transition-all hover:shadow-xl bg-white rounded-2xl flex flex-col md:flex-row">
               <div className="md:w-1/3 flex-shrink-0">
                 <Image
                   src={course.image}
@@ -151,7 +154,7 @@ export default function DashboardCoursesPage() {
                       </div>
                     )}
                   </div>
-                  <Link href={`/courses/${course.id}`} className="flex-shrink-0">
+                  <Link href={`/courses/${course.slug}`} className="flex-shrink-0">
                     <Button className="bg-black text-white hover:bg-gray-800 font-montserrat">রুটিন দেখুন</Button>
                   </Link>
                 </div>

@@ -3,19 +3,49 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { UserRound, Menu, Send, Lock, Home as HomeIcon, BookOpen, Info, Calendar } from 'lucide-react';
-import { useUser } from '@/appwrite';
+import { UserRound, Menu, Send, Lock, Home as HomeIcon, BookOpen, Info, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { useUser, useCollection, appwriteConfig } from '@/appwrite';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
+import { formatDistanceToNow, isAfter } from 'date-fns';
+import { bn } from 'date-fns/locale';
+
+function TimeRemaining({ dateTime }: { dateTime: string | null }) {
+    const [timeLeft, setTimeLeft] = useState<string>('');
+
+    useEffect(() => {
+        if (!dateTime) {
+            setTimeLeft('সময় নির্ধারিত হয়নি');
+            return;
+        }
+
+        const targetDate = new Date(dateTime);
+        const update = () => {
+            if (isAfter(new Date(), targetDate)) {
+                setTimeLeft('পরীক্ষা শেষ');
+            } else {
+                setTimeLeft(formatDistanceToNow(targetDate, { locale: bn, addSuffix: true }));
+            }
+        };
+
+        update();
+        const interval = setInterval(update, 60000);
+        return () => clearInterval(interval);
+    }, [dateTime]);
+
+    return <span>{timeLeft}</span>;
+}
 
 export default function CalendarPage() {
   const [showMenu, setShowMenu] = useState(false);
   const { user } = useUser();
+  const { data: calendar, isLoading } = useCollection<any>(appwriteConfig.calendarCollectionId);
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },
     { href: '/#courses-section', text: 'কোর্সসমূহ', icon: BookOpen },
-    { href: '/calendar', text: 'ক্যালেন্ডার', icon: Calendar },
+    { href: '/calendar', text: 'ক্যালেন্ডার', icon: CalendarIcon },
     { href: '/about', text: 'আমাদের সম্পর্কে', icon: Info },
   ];
 
@@ -87,15 +117,40 @@ export default function CalendarPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                     <TableRow>
-                        <TableCell colSpan={3} className="py-16 text-center">
-                            <div className="flex flex-col items-center justify-center gap-4">
-                                <Lock className="w-12 h-12 text-gray-300" />
-                                <h3 className="text-lg font-bold font-tiro-bangla text-gray-500">রুটিন এখনো প্রকাশিত হয়নি</h3>
-                                <p className="text-muted-foreground font-tiro-bangla">বোর্ড থেকে চূড়ান্ত রুটিন প্রকাশিত হওয়ার সাথে সাথেই এখানে ক্যালেন্ডার আপডেট করা হবে।</p>
-                            </div>
-                        </TableCell>
-                    </TableRow>
+                     {isLoading ? (
+                         Array.from({ length: 3 }).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                                <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                                <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                            </TableRow>
+                         ))
+                     ) : calendar && calendar.length > 0 ? (
+                         calendar.map((item: any) => (
+                            <TableRow key={item.$id}>
+                                <TableCell className="py-4 px-6 font-tiro-bangla font-bold">{item.subject}</TableCell>
+                                <TableCell className="py-4 px-6 font-tiro-bangla">
+                                    <div className="flex flex-col">
+                                        <span>{item.date}</span>
+                                        <span className="text-xs text-gray-500">{item.time}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="py-4 px-6 text-right font-tiro-bangla text-gray-600">
+                                    <TimeRemaining dateTime={item.examDateTime} />
+                                </TableCell>
+                            </TableRow>
+                         ))
+                     ) : (
+                        <TableRow>
+                            <TableCell colSpan={3} className="py-16 text-center">
+                                <div className="flex flex-col items-center justify-center gap-4">
+                                    <Lock className="w-12 h-12 text-gray-300" />
+                                    <h3 className="text-lg font-bold font-tiro-bangla text-gray-500">রুটিন এখনো প্রকাশিত হয়নি</h3>
+                                    <p className="text-muted-foreground font-tiro-bangla">বোর্ড থেকে চূড়ান্ত রুটিন প্রকাশিত হওয়ার সাথে সাথেই এখানে ক্যালেন্ডার আপডেট করা হবে।</p>
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                     )}
                 </TableBody>
             </Table>
         </div>

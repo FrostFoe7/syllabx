@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { UserRound, BookOpen, Calendar, Info, Send, Menu, BookCopy, Home as HomeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { useUser } from '@/appwrite';
-import { courseTabsData } from '@/lib/courses';
+import { useUser, useCollection, appwriteConfig } from '@/appwrite';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const heroData = {
   title: 'তোমার <span class="text-accent">সেরা প্রস্তুতির</span> শুরু হোক এখানে থেকেই',
@@ -24,7 +24,18 @@ const actionButtonsData = [
 export default function Home() {
   const [showMenu, setShowMenu] = useState(false);
   const { user } = useUser();
-  const [activeTab, setActiveTab] = useState(courseTabsData[0].id);
+  const { data: categories, isLoading: catsLoading } = useCollection<any>(appwriteConfig.categoriesCollectionId);
+  const { data: allCoursesData, isLoading: coursesLoading } = useCollection<any>(appwriteConfig.coursesCollectionId);
+  
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (categories && categories.length > 0 && !activeTab) {
+        setActiveTab(categories[0].slug);
+    }
+  }, [categories, activeTab]);
+
+  const currentTab = activeTab || (categories && categories.length > 0 ? categories[0].slug : null);
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },
@@ -113,18 +124,31 @@ export default function Home() {
 
         {/* Courses Section */}
         <section id="courses-section" className="pt-8 pb-20 px-[8%] text-center">
-            <div className="bg-gray-200 p-2 rounded-xl inline-flex mb-10">
-                {courseTabsData.map(tab => (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("px-6 py-2 border-none bg-transparent cursor-pointer text-base font-semibold rounded-lg text-gray-600 transition-all font-montserrat", activeTab === tab.id && "bg-white text-accent shadow-md")}>
-                        {tab.name}
-                    </button>
-                ))}
-            </div>
+            {catsLoading ? (
+                <div className="flex justify-center gap-4 mb-10">
+                    <Skeleton className="h-10 w-32" />
+                    <Skeleton className="h-10 w-32" />
+                </div>
+            ) : (
+                <div className="bg-gray-200 p-2 rounded-xl inline-flex mb-10">
+                    {categories?.map(tab => (
+                        <button key={tab.slug} onClick={() => setActiveTab(tab.slug)} className={cn("px-6 py-2 border-none bg-transparent cursor-pointer text-base font-semibold rounded-lg text-gray-600 transition-all font-montserrat", currentTab === tab.slug && "bg-white text-accent shadow-md")}>
+                            {tab.name}
+                        </button>
+                    ))}
+                </div>
+            )}
 
-            {courseTabsData.map(tab => (
-                <div key={tab.id} className={cn("grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-all", activeTab === tab.id ? "grid" : "hidden")}>
-                    {tab.courses.map(course => (
-                        <div key={course.title} className="bg-white rounded-2xl overflow-hidden text-left shadow-lg transition-all duration-400 hover:-translate-y-2 hover:shadow-xl">
+            {coursesLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <Skeleton className="h-[350px] w-full rounded-2xl" />
+                    <Skeleton className="h-[350px] w-full rounded-2xl" />
+                    <Skeleton className="h-[350px] w-full rounded-2xl" />
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {allCoursesData?.filter(c => c.categoryId === currentTab).map(course => (
+                        <div key={course.slug} className="bg-white rounded-2xl overflow-hidden text-left shadow-lg transition-all duration-400 hover:-translate-y-2 hover:shadow-xl">
                             <Image src={course.image} alt={course.title} width={400} height={200} className="w-full h-48 object-cover" data-ai-hint={course.imageHint} />
                             <div className="p-6">
                                 <h3 className="text-xl font-bold mb-3 flex justify-between items-start font-montserrat">
@@ -135,7 +159,7 @@ export default function Home() {
                                 </h3>
                                 
                                 <Link
-                                    href={`/courses/${course.id}`}
+                                    href={`/courses/${course.slug}`}
                                     className={cn("inline-block text-center bg-primary text-black px-6 py-3 rounded-lg no-underline font-bold mt-4 w-full transition-all duration-300 font-montserrat", 
                                     course.disabled ? "bg-gray-400 cursor-not-allowed pointer-events-none" : "hover:bg-yellow-500 hover:-translate-y-1 hover:shadow-lg")}>
                                     View Course details
@@ -144,7 +168,7 @@ export default function Home() {
                         </div>
                     ))}
                 </div>
-            ))}
+            )}
         </section>
       </main>
 

@@ -2,20 +2,31 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { allCourses } from '@/lib/courses';
 import Image from 'next/image';
 import Link from 'next/link';
 import { CheckCircle, Calendar, UserRound, Info, Send, Menu, Printer, Home as HomeIcon, BookOpen } from 'lucide-react';
-import { useUser } from '@/appwrite';
+import { useUser, useCollection, appwriteConfig } from '@/appwrite';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Query } from 'appwrite';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CourseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = params.courseId as string;
 
-  const course = allCourses.find(c => c.id === courseId);
+  const { data: courses, isLoading: isCourseLoading } = useCollection<any>(
+      appwriteConfig.coursesCollectionId,
+      [Query.equal('slug', courseId)]
+  );
+  
+  const course = courses?.[0];
+
+  const { data: routine, isLoading: isRoutineLoading } = useCollection<any>(
+      appwriteConfig.routinesCollectionId,
+      [Query.equal('courseId', courseId)]
+  );
 
   // Header and menu state
   const [showMenu, setShowMenu] = useState(false);
@@ -42,22 +53,16 @@ export default function CourseDetailPage() {
     subtitle: 'সহজ ব্যাখ্যা আর আধুনিক টেকনিকের মাধ্যমে আমরা তোমার সিলেবাসের ভয় দূর করবো ইনশাআল্লাহ্‌।'
   };
 
-  const physicsRoutine = [
-    { date: '১ ফেব্রুয়ারি, ২০২৬', topic: 'তাপগতিবিদ্যা' },
-    { date: '৩ ফেব্রুয়ারি, ২০২৬', topic: 'স্থির তড়িৎ' },
-    { date: '৫ ফেব্রুয়ারি, ২০২৬', topic: 'চল তড়িৎ' },
-    { date: '৭ ফেব্রুয়ারি, ২০২৬', topic: 'তড়িৎ প্রবাহের চৌম্বক ক্রিয়া ও চুম্বকত্ব' },
-    { date: '৯ ফেব্রুয়ারি, ২০২৬', topic: 'তড়িৎচুম্বকীয় আবেশ ও পরবর্তী প্রবাহ' },
-    { date: '১১ ফেব্রুয়ারি, ২০২৬', topic: 'জ্যামিতিক ও ভৌত আলোকবিজ্ঞান' },
-    { date: '১৩ ফেব্রুয়ারি, ২০২৬', topic: 'আধুনিক পদার্থবিজ্ঞানের সূচনা' },
-    { date: '১৫ ফেব্রুয়ারি, ২০২৬', topic: 'পরমাণুর মডেল এবং নিউক্লিয়ার পদার্থবিজ্ঞান' },
-    { date: '১৭ ফেব্রুয়ারি, ২০২৬', topic: 'সেমিকন্ডাক্টর ও ইলেকট্রনিক্স' },
-    { date: '১৯ ফেব্রুয়ারি, ২০২৬', topic: 'জ্যোতির্বিজ্ঞান' },
-    { date: '২১ ফেব্রুয়ারি, ২০২৬', topic: 'Physics Second Part Final Exam' }
-  ];
+  if (isCourseLoading) {
+      return (
+          <div className="container mx-auto px-6 py-12">
+              <Skeleton className="h-[400px] w-full rounded-3xl" />
+          </div>
+      );
+  }
   
   if (!course) {
-    return <div className="flex justify-center items-center h-screen">Course not found</div>;
+    return <div className="flex justify-center items-center h-screen font-tiro-bangla">কোর্সটি খুঁজে পাওয়া যায়নি</div>;
   }
 
   const handlePrint = () => {
@@ -190,27 +195,27 @@ export default function CourseDetailPage() {
                 </div>
                 
                 <div>
-                  {course.id === 'physics-second-part' ? (
+                  {routine && routine.length > 0 ? (
                       <table className="w-full text-left border-collapse font-tiro-bangla">
                           <thead className="bg-yellow-100 print:bg-gray-200">
                               <tr>
                                   <th className="p-4 border-b-2 border-yellow-300 text-base font-bold text-accent print:text-black">তারিখ</th>
                                   <th className="p-4 border-b-2 border-yellow-300 text-base font-bold text-accent print:text-black">পরীক্ষার বিষয়/টপিক</th>
-                                  <th className="p-4 border-b-2 border-yellow-300 text-base font-bold text-accent print:text-black hidden print:table-cell">সময়</th>
+                                  <th className="p-4 border-b-2 border-yellow-300 text-base font-bold text-accent print:text-black hidden print:table-cell">সময়</th>
                               </tr>
                           </thead>
                           <tbody>
-                              {physicsRoutine.map((item, index) => (
+                              {routine.map((item: any, index: number) => (
                                   <tr key={index} className="odd:bg-white even:bg-yellow-50/50 hover:bg-yellow-100 transition-colors">
                                       <td className="p-4 border-b border-yellow-100 text-gray-700">{item.date}</td>
                                       <td className="p-4 border-b border-yellow-100 text-gray-800 font-medium">{item.topic}</td>
-                                      <td className="p-4 border-b border-yellow-100 text-gray-700 hidden print:table-cell">সকাল ১০ টা - রাত ১০ টা</td>
+                                      <td className="p-4 border-b border-yellow-100 text-gray-700 hidden print:table-cell">{item.time || 'সকাল ১০ টা - রাত ১০ টা'}</td>
                                   </tr>
                               ))}
                           </tbody>
                       </table>
                   ) : (
-                      <p className="text-center text-gray-500">কোর্স রুটিন খুব শীঘ্রই এখানে আপডেট করা হবে।</p>
+                      <p className="text-center text-gray-500 font-tiro-bangla">কোর্স রুটিন খুব শীঘ্রই এখানে আপডেট করা হবে।</p>
                   )}
                 </div>
             </div>

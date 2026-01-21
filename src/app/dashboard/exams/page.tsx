@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 
 interface Exam {
     $id: string;
-    examName: string;
+    title: string;
     courseName: string;
     startTime: string; // ISO string in Appwrite
     endTime: string; // ISO string in Appwrite
@@ -67,7 +67,7 @@ function ExamCard({ exam }: { exam: Exam }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>{exam.examName}</CardTitle>
+                <CardTitle>{exam.title}</CardTitle>
                 <CardDescription>{exam.courseName}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
