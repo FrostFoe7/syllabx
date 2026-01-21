@@ -11,6 +11,7 @@ export const appwriteConfig = {
     routinesCollectionId: 'routines',
     resultsCollectionId: 'results',
     adminsCollectionId: 'admins',
+    bucketId: 'main_storage',
 };
 
 const client = new Client();

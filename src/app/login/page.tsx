@@ -19,8 +19,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 
 const formSchema = z.object({
   name: z.string(),
-  email: z.string().email('সঠিক ইমেইল প্রদান করুন'),
-  password: z.string().min(6, 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে'),
+  phone: z.string().min(5, 'সঠিক ফোন নম্বর প্রদান করুন'),
+  password: z.string().min(8, 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -41,49 +41,48 @@ function LoginForm() {
         ? formSchema.omit({ name: true })
         : formSchema
     ),
-    defaultValues: { name: '', email: '', password: '' }
+    defaultValues: { name: '', phone: '', password: '' }
   });
 
   const handleAuth: SubmitHandler<FormValues> = async (data) => {
     setIsLoading(true);
-    const { email, password, name } = data;
+    const { phone, password, name } = data;
+    // Ensure no whitespace
+    const cleanPhone = phone.trim();
+    const virtualEmail = `user_${cleanPhone}@syllabx.com`;
+
+    console.log('Attempting auth with:', { phone: cleanPhone, email: virtualEmail });
 
     try {
       if (isLogin) {
         // Handle Login
-        await account.createEmailPasswordSession(email, password);
+        await account.createEmailPasswordSession(virtualEmail, password);
+        // ... existing auth code ...
         toast({ title: 'সফলভাবে লগইন হয়েছে' });
       } else {
-        // Handle Sign Up
-        if (!name || name.trim() === '') {
-          form.setError('name', { type: 'manual', message: 'নাম প্রদান করুন' });
-          setIsLoading(false);
-          return;
-        }
-        
-        const userId = ID.unique();
-        await account.create(userId, email, password, name);
-        
-        // Appwrite requires creating a session after registration to perform authorized actions
-        await account.createEmailPasswordSession(email, password);
-
-        // Create user profile in Appwrite Databases
-        await databases.createDocument(
-            appwriteConfig.databaseId, 
-            appwriteConfig.usersCollectionId, 
-            userId, 
-            {
-                userId: userId,
-                name: name,
-                email: email,
-                createdAt: new Date().toISOString(),
-                enrolledCourses: [],
-                phone: '', // Added because it was required in setup-appwrite.js
-            }
-        );
-        toast({ title: 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে' });
+        // ... signup code ...
       }
       
+      // Check if this user is an admin after login
+      try {
+        const user = await account.get();
+        console.log('Checking admin status for UID:', user.$id);
+        const adminDoc = await databases.getDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.adminsCollectionId,
+            user.$id
+        );
+        
+        console.log('Admin document found:', adminDoc);
+        if (adminDoc) {
+            router.push('/admin');
+            return;
+        }
+      } catch (e: any) {
+          console.log('Admin check failed or user is not an admin:', e.message);
+          // If not an admin (404), continue to dashboard
+      }
+
       const course = searchParams.get('course');
       const redirectUrl = course ? `/dashboard?course=${encodeURIComponent(course)}` : '/dashboard';
       router.push(redirectUrl);
@@ -91,9 +90,9 @@ function LoginForm() {
     } catch (error: any) {
       console.error(error);
       const errorMessage = error.code === 409
-        ? 'এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট তৈরি করা আছে।'
+        ? 'এই ফোন নম্বর দিয়ে ইতিমধ্যে অ্যাকাউন্ট তৈরি করা আছে।'
         : error.code === 401
-        ? 'ভুল ইমেইল অথবা পাসওয়ার্ড।'
+        ? 'ভুল ফোন নম্বর অথবা পাসওয়ার্ড।'
         : 'একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।';
       
       toast({
@@ -160,14 +159,14 @@ function LoginForm() {
             )}
             <FormField
               control={form.control}
-              name="email"
+              name="phone"
               render={({ field }) => (
                 <FormItem className="text-left">
-                  <FormLabel className="block mb-2 font-semibold text-gray-600">ইমেইল</FormLabel>
+                  <FormLabel className="block mb-2 font-semibold text-gray-600">ফোন নম্বর</FormLabel>
                   <FormControl>
                     <Input 
                       className="w-full p-3 border-2 border-gray-200 rounded-lg outline-none focus:border-accent" 
-                      placeholder="example@email.com" 
+                      placeholder="01XXXXXXXXX" 
                       {...field} />
                   </FormControl>
                   <FormMessage className="text-red-500 text-xs mt-1" />

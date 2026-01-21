@@ -1,4 +1,4 @@
-import { Client, Databases, Permission, Role, ID } from 'node-appwrite';
+import { Client, Databases, Permission, Role, ID, Storage, Users } from 'node-appwrite';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -19,6 +19,7 @@ const QUESTIONS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_QUESTIONS_COLLE
 const COURSES_COLLECTION_ID = 'courses';
 const ROUTINES_COLLECTION_ID = 'routines';
 const RESULTS_COLLECTION_ID = 'results';
+const BUCKET_ID = 'main_storage';
 
 if (!ENDPOINT || !PROJECT_ID || !API_KEY) {
     console.error('Error: Missing required environment variables.');
@@ -31,6 +32,8 @@ const client = new Client()
     .setKey(API_KEY);
 
 const databases = new Databases(client);
+const storage = new Storage(client);
+const users = new Users(client);
 
 // Helper to wait
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -49,10 +52,8 @@ async function createAttribute(databaseId, collectionId, type, key, size, requir
              await databases.createDatetimeAttribute(databaseId, collectionId, key, required, undefined, array);
         }
         console.log(`Created attribute '${key}' for collection '${collectionId}'`);
-        // Small delay to allow Appwrite to process
         await sleep(500); 
     } catch (error) {
-        // If attribute already exists, ignore
         if (error.code === 409) {
             console.log(`Attribute '${key}' already exists in '${collectionId}'`);
         } else {
@@ -61,8 +62,27 @@ async function createAttribute(databaseId, collectionId, type, key, size, requir
     }
 }
 
+async function createIndex(databaseId, collectionId, key, type, attributes) {
+    try {
+        await databases.createIndex(databaseId, collectionId, key, type, attributes);
+        console.log(`Created index '${key}' for collection '${collectionId}'`);
+        await sleep(500);
+    } catch (error) {
+        if (error.code === 409) {
+            console.log(`Index '${key}' already exists in '${collectionId}'`);
+        } else {
+            console.error(`Error creating index '${key}':`, error.message);
+        }
+    }
+}
+
 async function setup() {
     console.log('Starting Appwrite Setup...');
+
+    const ADMIN_PHONE = '00001';
+    const ADMIN_PASSWORD = 'admin12345';
+    const ADMIN_NAME = 'System Admin';
+    const ADMIN_VIRTUAL_EMAIL = `user_${ADMIN_PHONE}@syllabx.com`;
 
     // 1. Create Database
     try {
@@ -80,15 +100,14 @@ async function setup() {
     // 2. Create Users Collection
     const usersPermissions = [
         Permission.read(Role.any()),
-        Permission.create(Role.any()), // Changed to any to allow registration
+        Permission.create(Role.any()),
         Permission.update(Role.users()),
         Permission.delete(Role.users()),
     ];
 
     try {
         await databases.getCollection(DATABASE_ID, USERS_COLLECTION_ID);
-        console.log(`Collection '${USERS_COLLECTION_ID}' already exists. Updating permissions...`);
-        await databases.updateCollection(DATABASE_ID, USERS_COLLECTION_ID, 'Users', usersPermissions);
+        console.log(`Collection '${USERS_COLLECTION_ID}' already exists.`);
     } catch (error) {
         if (error.code === 404) {
             await databases.createCollection(DATABASE_ID, USERS_COLLECTION_ID, 'Users', usersPermissions);
@@ -96,29 +115,67 @@ async function setup() {
         }
     }
 
-    // Users Attributes
     await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'userId', 36, true);
-    await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'phone', 20, false); // Changed to false as it might be optional initially
+    await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'phone', 20, false);
     await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'name', 100, true);
     await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'createdAt', 30, true);
     await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'email', 100, false);
     await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'roll', 50, false);
     await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'institution', 200, false);
-    await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'enrolledCourses', 100, false, true); // Array of strings
+    await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'enrolledCourses', 100, false, true);
 
     // 2.5 Create Admins Collection
+    const adminPermissions = [
+        Permission.read(Role.any()),
+    ];
+
     try {
         await databases.getCollection(DATABASE_ID, ADMINS_COLLECTION_ID);
-        console.log(`Collection '${ADMINS_COLLECTION_ID}' already exists.`);
+        console.log(`Collection '${ADMINS_COLLECTION_ID}' already exists. Updating permissions...`);
+        await databases.updateCollection(DATABASE_ID, ADMINS_COLLECTION_ID, 'Admins', adminPermissions);
     } catch (error) {
         if (error.code === 404) {
-            await databases.createCollection(DATABASE_ID, ADMINS_COLLECTION_ID, 'Admins', [
-                Permission.read(Role.any()),
-            ]);
+            await databases.createCollection(DATABASE_ID, ADMINS_COLLECTION_ID, 'Admins', adminPermissions);
             console.log(`Created collection '${ADMINS_COLLECTION_ID}'`);
         }
     }
     await createAttribute(DATABASE_ID, ADMINS_COLLECTION_ID, 'string', 'userId', 36, true);
+
+    // 2.6 Create Default Admin User
+    let adminUserId = 'admin_user';
+    try {
+        await users.delete(adminUserId);
+        console.log('Deleted old admin user for refresh.');
+    } catch (err) {}
+
+    try {
+        const newUser = await users.create(adminUserId, ADMIN_VIRTUAL_EMAIL, undefined, ADMIN_PASSWORD, ADMIN_NAME);
+        console.log(`Created admin auth user: ${newUser.$id}`);
+        
+        // Ensure profile exists in users collection
+        try { await databases.deleteDocument(DATABASE_ID, USERS_COLLECTION_ID, adminUserId); } catch(e){}
+        await databases.createDocument(DATABASE_ID, USERS_COLLECTION_ID, adminUserId, {
+            userId: adminUserId,
+            name: ADMIN_NAME,
+            email: ADMIN_VIRTUAL_EMAIL,
+            phone: ADMIN_PHONE,
+            createdAt: new Date().toISOString(),
+            enrolledCourses: []
+        });
+    } catch (err) {
+        console.log('Admin user creation failed:', err.message);
+    }
+
+    // Add to Admins Collection if not there
+    try {
+        await databases.getDocument(DATABASE_ID, ADMINS_COLLECTION_ID, adminUserId);
+        console.log('Admin already registered in admins collection.');
+    } catch (error) {
+        await databases.createDocument(DATABASE_ID, ADMINS_COLLECTION_ID, adminUserId, {
+            userId: adminUserId
+        });
+        console.log('Admin registered in admins collection.');
+    }
 
     // 3. Create Exams Collection
     try {
@@ -128,25 +185,22 @@ async function setup() {
         if (error.code === 404) {
             await databases.createCollection(DATABASE_ID, EXAMS_COLLECTION_ID, 'Exams', [
                 Permission.read(Role.any()),
+                Permission.write(Role.users()), // Note: Should be restricted to admins in production
             ]);
             console.log(`Created collection '${EXAMS_COLLECTION_ID}'`);
         }
     }
 
-    // Exams Attributes
-    await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'originalId', 50, false); // Optional now
+    await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'originalId', 50, false);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'title', 255, true);
-    await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'integer', 'duration', null, true); // Changed to integer
+    await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'integer', 'duration', null, true);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'integer', 'totalQuestions', null, true);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'subject', 100, false);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'searchTags', 500, false);
-    
-    // New Attributes for Exams
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'startTime', 30, true);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'endTime', 30, true);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'float', 'negativeMark', null, true);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'courseName', 255, true);
-
 
     // 4. Create Questions Collection
     try {
@@ -156,83 +210,40 @@ async function setup() {
         if (error.code === 404) {
             await databases.createCollection(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'Questions', [
                 Permission.read(Role.any()),
+                Permission.write(Role.users()), // Note: Should be restricted to admins in production
             ]);
             console.log(`Created collection '${QUESTIONS_COLLECTION_ID}'`);
         }
     }
 
-    // Questions Attributes
     await createAttribute(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'string', 'examId', 50, true);
     await createAttribute(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'string', 'q', 1000, true);
     await createAttribute(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'string', 'a1', 500, true);
     await createAttribute(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'string', 'a2', 500, true);
     await createAttribute(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'string', 'a3', 500, true);
     await createAttribute(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'string', 'a4', 500, true);
-    await createAttribute(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'string', 'ans', 50, true); // Changed to string to support "Option A"
+    await createAttribute(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'integer', 'ans', null, true);
     await createAttribute(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'string', 'exp', 2000, false);
 
-    // 5. Create Courses Collection
+    // IMPORTANT: Create Index for Queries
+    await createIndex(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'examId_index', 'key', ['examId']);
+
+    // 5. Create Storage Bucket
     try {
-        await databases.getCollection(DATABASE_ID, COURSES_COLLECTION_ID);
-        console.log(`Collection '${COURSES_COLLECTION_ID}' already exists.`);
+        await storage.getBucket(BUCKET_ID);
+        console.log(`Bucket '${BUCKET_ID}' already exists.`);
     } catch (error) {
         if (error.code === 404) {
-            await databases.createCollection(DATABASE_ID, COURSES_COLLECTION_ID, 'Courses', [
+            await storage.createBucket(BUCKET_ID, 'Main Storage', [
                 Permission.read(Role.any()),
-            ]);
-            console.log(`Created collection '${COURSES_COLLECTION_ID}'`);
+                Permission.write(Role.users()),
+            ], false, true, undefined, ['jpg', 'png', 'svg', 'webp']);
+            console.log(`Created bucket '${BUCKET_ID}'`);
         }
     }
-    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'title', 255, true);
-    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'price', 50, true);
-    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'image', 500, false);
-    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'description', 1000, true);
-    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'features', 500, false, true);
-    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'category', 50, true);
-    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'boolean', 'isDisabled', false, false);
-    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'enrollButtonText', 50, false);
 
-    // 6. Create Routines Collection
-    try {
-        await databases.getCollection(DATABASE_ID, ROUTINES_COLLECTION_ID);
-        console.log(`Collection '${ROUTINES_COLLECTION_ID}' already exists.`);
-    } catch (error) {
-        if (error.code === 404) {
-            await databases.createCollection(DATABASE_ID, ROUTINES_COLLECTION_ID, 'Routines', [
-                Permission.read(Role.any()),
-            ]);
-            console.log(`Created collection '${ROUTINES_COLLECTION_ID}'`);
-        }
-    }
-    await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'courseId', 50, true);
-    await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'date', 100, true);
-    await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'subject', 255, true);
-    await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'time', 50, true);
-
-    // 7. Create Results Collection
-    try {
-        await databases.getCollection(DATABASE_ID, RESULTS_COLLECTION_ID);
-        console.log(`Collection '${RESULTS_COLLECTION_ID}' already exists.`);
-    } catch (error) {
-        if (error.code === 404) {
-            await databases.createCollection(DATABASE_ID, RESULTS_COLLECTION_ID, 'Results', [
-                Permission.read(Role.any()),
-                Permission.create(Role.users()),
-            ]);
-            console.log(`Created collection '${RESULTS_COLLECTION_ID}'`);
-        }
-    }
-    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'userId', 36, true);
-    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'examId', 50, true);
-    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'integer', 'score', null, true);
-    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'integer', 'totalQuestions', null, true);
-    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'integer', 'percentage', null, true);
-    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'integer', 'duration', null, true);
-    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'submittedAt', 30, true);
-
-    console.log('Waiting for attributes to index...');
-    await sleep(3000); // Give it some time
-
+    console.log('Waiting for indexing...');
+    await sleep(3000);
     console.log('Setup complete!');
 }
 

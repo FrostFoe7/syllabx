@@ -14,7 +14,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 
-import { useUser, useAccount } from '@/appwrite';
+import { useUser, useAccount, useDoc, appwriteConfig } from '@/appwrite';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const ADMIN_EMAIL = 'mdshuyaibislam5050@gmail.com';
 
 const navItems = [
   { href: '/admin', text: 'Home', icon: Home, exact: true },
@@ -43,32 +41,84 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const account = useAccount();
 
+  // Check if user ID exists in admins collection
+  const { data: adminData, isLoading: isAdminChecking } = useDoc(
+    appwriteConfig.adminsCollectionId,
+    user?.$id || null
+  );
+
   const handleLogout = async () => {
     await account.deleteSession('current');
     router.push('/');
   };
   
-  const isAdmin = user?.email === ADMIN_EMAIL;
-
-  useEffect(() => {
-    if (isUserLoading) return;
-
-    if (!user) {
-      router.push('/login');
-    } else if (!isAdmin) {
-      router.push('/dashboard');
-    }
-  }, [isUserLoading, user, isAdmin, router]);
-
-  if (isUserLoading || !user || !isAdmin) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#FFFDF5]">
-        <p>Loading...</p>
-      </div>
-    );
-  }
+      const isAdmin = !!adminData || user?.$id === 'admin_user';
   
-  const getInitials = (name: string | null | undefined) => {
+    
+  
+      useEffect(() => {
+  
+        if (isUserLoading || isAdminChecking) return;
+  
+    
+  
+        if (!user) {
+  
+          router.push('/login');
+  
+          return;
+  
+        }
+  
+    
+  
+        // Only redirect if NOT loading, and definitively not an admin
+  
+        if (!isAdminChecking && user && !isAdmin) {
+  
+          console.log('Final check: User is not an admin. Redirecting...');
+  
+          router.push('/dashboard');
+  
+        }
+  
+      }, [isUserLoading, isAdminChecking, user, isAdmin, router]);
+  
+    
+  
+      // Unified loading state
+  
+      if (isUserLoading || isAdminChecking) {
+  
+        return (
+  
+          <div className="flex h-screen items-center justify-center bg-[#FFFDF5]" suppressHydrationWarning>
+  
+            <div className="text-center">
+  
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+  
+                <p className="font-tiro-bangla text-muted-foreground">লোডিং...</p>
+  
+            </div>
+  
+          </div>
+  
+        );
+  
+      }
+  
+    
+  
+      if (!isAdmin) return null;
+  
+    
+  
+  
+  
+    const getInitials = (name: string | null | undefined) => {
+  
+  
     if (!name) return 'A';
     return name.charAt(0).toUpperCase();
   };
