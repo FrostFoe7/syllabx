@@ -5,18 +5,17 @@ import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { useUser, useFirestore, useDoc, useCollection } from '@/firebase';
-import { collection, query, doc, DocumentData } from 'firebase/firestore';
+import { useUser, useDatabases, useDoc, useCollection, appwriteConfig } from '@/appwrite';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Calendar, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
-interface Exam extends DocumentData {
-    id: string;
+interface Exam {
+    $id: string;
     examName: string;
     courseName: string;
-    startTime: { seconds: number; nanoseconds: number };
-    endTime: { seconds: number; nanoseconds: number };
+    startTime: string; // ISO string in Appwrite
+    endTime: string; // ISO string in Appwrite
     duration: number;
 }
 
@@ -24,8 +23,8 @@ function ExamCard({ exam }: { exam: Exam }) {
     const router = useRouter();
     const [status, setStatus] = useState<'upcoming' | 'active' | 'finished'>('upcoming');
 
-    const startTime = useMemo(() => new Date(exam.startTime.seconds * 1000), [exam.startTime]);
-    const endTime = useMemo(() => new Date(exam.endTime.seconds * 1000), [exam.endTime]);
+    const startTime = useMemo(() => new Date(exam.startTime), [exam.startTime]);
+    const endTime = useMemo(() => new Date(exam.endTime), [exam.endTime]);
 
     useEffect(() => {
         const updateStatus = () => {
@@ -47,7 +46,7 @@ function ExamCard({ exam }: { exam: Exam }) {
 
     const handleStartExam = () => {
         if (status === 'active') {
-            router.push(`/exam/${exam.id}`);
+            router.push(`/exam/${exam.$id}`);
         }
     };
 
@@ -115,28 +114,21 @@ function ExamList({ exams, status }: { exams: Exam[] | null, status: 'loading' |
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {exams.map(exam => <ExamCard key={exam.id} exam={exam} />)}
+            {exams.map(exam => <ExamCard key={exam.$id} exam={exam} />)}
         </div>
     );
 }
 
 export default function ExamsPage() {
     const { user, isLoading: isUserLoading } = useUser();
-    const firestore = useFirestore();
+    const { data: userData, isLoading: isDataLoading } = useDoc<any>(
+        appwriteConfig.usersCollectionId,
+        user?.$id || null
+    );
 
-    const userDocRef = useMemo(() => {
-        if (!user) return null;
-        return doc(firestore, 'users', user.uid);
-    }, [user, firestore]);
-    
-    const { data: userData, isLoading: isDataLoading } = useDoc(userDocRef);
-
-    const examsQuery = useMemo(() => {
-        if (!firestore) return null;
-        return query(collection(firestore, 'exams'));
-    }, [firestore]);
-
-    const { data: allExams, isLoading: examsLoading } = useCollection<Exam>(examsQuery);
+    const { data: allExams, isLoading: examsLoading } = useCollection<Exam & any>(
+        appwriteConfig.examsCollectionId
+    );
     
     const enrolledCourses = userData?.enrolledCourses || [];
 
@@ -156,8 +148,8 @@ export default function ExamsPage() {
         const upcoming: Exam[] = [];
 
         for (const exam of filteredExams) {
-            const startTime = new Date(exam.startTime.seconds * 1000);
-            const endTime = new Date(exam.endTime.seconds * 1000);
+            const startTime = new Date(exam.startTime);
+            const endTime = new Date(exam.endTime);
 
             if (endTime < now) {
                 past.push(exam);

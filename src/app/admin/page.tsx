@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { useUser } from '@/appwrite';
 
 export default function AdminPage() {
   const {user} = useUser();
@@ -12,7 +12,7 @@ export default function AdminPage() {
       <Card>
         <CardHeader className="flex flex-row items-center gap-4">
           <Shield className="h-8 w-8 text-primary" />
-          <CardTitle>Welcome, {user?.displayName || 'Admin'}!</CardTitle>
+          <CardTitle>Welcome, {user?.name || 'Admin'}!</CardTitle>
         </CardHeader>
         <CardContent>
           <p>This is the central hub for managing courses, students, and results.</p>

@@ -28,24 +28,24 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useToast } from '@/hooks/use-toast';
+import { ID } from 'appwrite';
+import { useDatabases, appwriteConfig } from '@/appwrite';
 import { allCourses } from '@/lib/courses';
 import { ExamFormSchema, ExamFormValues } from './schema';
-import { useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const jsonFormatPlaceholder = `[
   {
     "question": "Your question here?",
     "options": ["Option A", "Option B", "Option C", "Option D"],
-    "answer": "Option A"
+    "answer": "Option A",
+    "explanation": "Optional explanation"
   }
 ]`;
 
 export default function AdminQuestionsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const firestore = useFirestore();
+  const databases = useDatabases();
 
   const form = useForm<ExamFormValues>({
     resolver: zodResolver(ExamFormSchema),
@@ -55,7 +55,7 @@ export default function AdminQuestionsPage() {
       startTime: '',
       endTime: '',
       duration: 60,
-      negativeMark: 0,
+      negativeMark: 0.25,
       questionsJson: '',
     },
   });
@@ -63,25 +63,84 @@ export default function AdminQuestionsPage() {
   const onSubmit: SubmitHandler<ExamFormValues> = async (data) => {
     setIsLoading(true);
     try {
-      const questions = JSON.parse(data.questionsJson);
+      const questionsData = JSON.parse(data.questionsJson);
+      if (!Array.isArray(questionsData)) {
+          throw new Error("Questions JSON must be an array");
+      }
 
-      const examData = {
-        ...data,
-        questions,
-        createdAt: serverTimestamp(),
-        startTime: new Date(data.startTime),
-        endTime: new Date(data.endTime),
+      const examId = ID.unique();
+
+      // 1. Create Exam Document
+      const examDataPayload = {
+        originalId: examId, // Using the document ID as originalId too
+        title: data.examName,
+        courseName: data.courseName, // Added to schema
+        duration: Math.floor(Number(data.duration)), // Ensure integer
+        totalQuestions: questionsData.length,
+        negativeMark: Number(data.negativeMark),
+        startTime: new Date(data.startTime).toISOString(),
+        endTime: new Date(data.endTime).toISOString(),
+        // Default/Optional fields
+        subject: data.courseName, 
+        searchTags: data.examName
       };
-      
-      // Remove questionsJson as it's not needed in the final document
-      delete (examData as any).questionsJson;
 
-      const examsCollection = collection(firestore, 'exams');
-      await addDoc(examsCollection, examData);
+      await databases.createDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.examsCollectionId,
+        examId,
+        examDataPayload
+      );
+
+      // 2. Create Question Documents
+      const questionPromises = questionsData.map(async (q: any) => {
+          const options = q.options || [];
+          // Map answer "Option A" -> 1, "Option B" -> 2 ...
+          // OR if answer is the text itself, find index.
+          // Assuming answer matches one of the options text or "Option A" format?
+          // The placeholder says "answer": "Option A". 
+          // Let's assume the user enters "Option A" or the exact string.
+          // If it's "Option A", "Option B", etc., we can extract the letter.
+          // Or we can just find the index of the answer string in the options array.
+          
+          let ansIndex = 0;
+          if (q.answer.startsWith("Option ")) {
+              const char = q.answer.split(" ")[1];
+              if (char === 'A') ansIndex = 1;
+              else if (char === 'B') ansIndex = 2;
+              else if (char === 'C') ansIndex = 3;
+              else if (char === 'D') ansIndex = 4;
+          } else {
+              // Try to find exact match
+              const idx = options.indexOf(q.answer);
+              if (idx !== -1) ansIndex = idx + 1;
+          }
+          
+          // Fallback or validation? Schema requires integer.
+          if (ansIndex === 0) ansIndex = 1; // Default to A if mapping fails, or throw?
+
+          return databases.createDocument(
+              appwriteConfig.databaseId,
+              appwriteConfig.questionsCollectionId,
+              ID.unique(),
+              {
+                  examId: examId,
+                  q: q.question,
+                  a1: options[0] || "",
+                  a2: options[1] || "",
+                  a3: options[2] || "",
+                  a4: options[3] || "",
+                  ans: ansIndex,
+                  exp: q.explanation || ""
+              }
+          );
+      });
+
+      await Promise.all(questionPromises);
       
       toast({
         title: 'Success!',
-        description: 'The exam has been uploaded successfully.',
+        description: 'The exam and questions have been uploaded successfully.',
       });
       form.reset();
     } catch (error: any) {

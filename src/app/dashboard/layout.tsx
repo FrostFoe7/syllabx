@@ -11,7 +11,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 
-import { useUser } from '@/firebase';
+import { useUser } from '@/appwrite';
 import { cn } from '@/lib/utils';
 
 const navItems = [

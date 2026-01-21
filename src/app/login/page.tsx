@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -10,9 +10,8 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirebaseApp } from '@/firebase';
+import { ID } from 'appwrite';
+import { useAccount, useDatabases, appwriteConfig } from '@/appwrite';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,16 +25,15 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function LoginPage() {
+function LoginForm() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const app = useFirebaseApp();
-  const auth = getAuth(app);
-  const firestore = getFirestore(app);
+  const account = useAccount();
+  const databases = useDatabases();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(
@@ -53,7 +51,7 @@ export default function LoginPage() {
     try {
       if (isLogin) {
         // Handle Login
-        await signInWithEmailAndPassword(auth, email, password);
+        await account.createEmailPasswordSession(email, password);
         toast({ title: 'সফলভাবে লগইন হয়েছে' });
       } else {
         // Handle Sign Up
@@ -63,20 +61,26 @@ export default function LoginPage() {
           return;
         }
         
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+        const userId = ID.unique();
+        await account.create(userId, email, password, name);
+        
+        // Appwrite requires creating a session after registration to perform authorized actions
+        await account.createEmailPasswordSession(email, password);
 
-        // Update Firebase auth profile
-        await updateProfile(user, { displayName: name });
-
-        // Create user profile in Firestore
-        await setDoc(doc(firestore, "users", user.uid), {
-            uid: user.uid,
-            displayName: name,
-            email: user.email,
-            createdAt: serverTimestamp(),
-            enrolledCourses: [],
-        });
+        // Create user profile in Appwrite Databases
+        await databases.createDocument(
+            appwriteConfig.databaseId, 
+            appwriteConfig.usersCollectionId, 
+            userId, 
+            {
+                userId: userId,
+                name: name,
+                email: email,
+                createdAt: new Date().toISOString(),
+                enrolledCourses: [],
+                phone: '', // Added because it was required in setup-appwrite.js
+            }
+        );
         toast({ title: 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে' });
       }
       
@@ -86,25 +90,17 @@ export default function LoginPage() {
 
     } catch (error: any) {
       console.error(error);
-      const errorMessage = error.code === 'auth/email-already-in-use'
+      const errorMessage = error.code === 409
         ? 'এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট তৈরি করা আছে।'
-        : error.code === 'auth/invalid-credential'
+        : error.code === 401
         ? 'ভুল ইমেইল অথবা পাসওয়ার্ড।'
         : 'একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।';
       
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-          toast({
-            variant: 'destructive',
-            title: 'ত্রুটি',
-            description: 'ভুল ইমেইল অথবা পাসওয়ার্ড।',
-          });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'ত্রুটি',
-          description: errorMessage,
-        });
-      }
+      toast({
+        variant: 'destructive',
+        title: 'ত্রুটি',
+        description: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -208,4 +204,12 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <LoginForm />
+        </Suspense>
+    );
 }

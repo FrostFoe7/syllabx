@@ -6,7 +6,7 @@ import { allCourses } from '@/lib/courses';
 import Image from 'next/image';
 import Link from 'next/link';
 import { CheckCircle, Calendar, UserRound, Info, Send, Menu, Printer, Home as HomeIcon, BookOpen } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { useUser } from '@/appwrite';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 

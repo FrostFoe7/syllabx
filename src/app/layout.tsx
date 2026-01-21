@@ -1,6 +1,6 @@
 import type {Metadata} from 'next';
 import './globals.css';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AppwriteClientProvider } from '@/appwrite/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
@@ -16,10 +16,10 @@ export default function RootLayout({
   return (
     <html lang="bn" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <FirebaseClientProvider>
+        <AppwriteClientProvider>
           {children}
           <Toaster />
-        </FirebaseClientProvider>
+        </AppwriteClientProvider>
       </body>
     </html>
   );

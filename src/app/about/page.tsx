@@ -4,16 +4,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Brain, Lightbulb, Mail, Rocket, Fingerprint, Globe, UserRound, Info, Github, Send, Menu, Home as HomeIcon, BookOpen, Calendar } from 'lucide-react';
 import { useState } from 'react';
-import { useUser } from '@/firebase';
-import { getAuth, signOut } from 'firebase/auth';
-import { useFirebaseApp } from '@/firebase';
+import { useUser, useAccount } from '@/appwrite';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 
 export default function AboutPage() {
   const [showMenu, setShowMenu] = useState(false);
   const { user } = useUser();
-  const app = useFirebaseApp();
-  const auth = getAuth(app);
+  const account = useAccount();
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },
@@ -23,7 +20,7 @@ export default function AboutPage() {
   ];
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await account.deleteSession('current');
   };
   
   const heroData = {

@@ -3,8 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { useUser, useFirestore, useDoc } from '@/firebase';
-import { doc, setDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { useUser, useDatabases, useDoc, appwriteConfig } from '@/appwrite';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -17,28 +16,27 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function DashboardCoursesPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const router = useRouter();
-  const firestore = useFirestore();
+  const databases = useDatabases();
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const userDocRef = useMemo(() => {
-    if (!user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
-  
-  const { data: userData, isLoading: isDataLoading } = useDoc(userDocRef);
+  const { data: userData, isLoading: isDataLoading } = useDoc<any>(
+    appwriteConfig.usersCollectionId, 
+    user?.$id || null
+  );
 
   // Handle auto-enrollment from URL query parameter
   useEffect(() => {
     const enrollCourse = async () => {
       const courseToEnroll = searchParams.get('course');
       // Exit if no course in URL, or if user/data is still loading
-      if (!courseToEnroll || !user || !firestore || isDataLoading) {
+      if (!courseToEnroll || !user || !databases || isDataLoading) {
         return;
       }
 
       const decodedCourseName = decodeURIComponent(courseToEnroll);
-      const docRef = doc(firestore, 'users', user.uid);
+      const collectionId = appwriteConfig.usersCollectionId;
+      const documentId = user.$id;
 
       // Check if already enrolled using data from our hook
       if (userData?.enrolledCourses?.includes(decodedCourseName)) {
@@ -50,18 +48,29 @@ export default function DashboardCoursesPage() {
       try {
         // If userData is not null, document exists, so update it.
         if (userData) {
-          await updateDoc(docRef, {
-            enrolledCourses: arrayUnion(decodedCourseName)
-          });
+          await databases.updateDocument(
+            appwriteConfig.databaseId,
+            collectionId,
+            documentId,
+            {
+              enrolledCourses: [...(userData.enrolledCourses || []), decodedCourseName]
+            }
+          );
         } else {
           // If userData is null, document doesn't exist, so create it.
-          await setDoc(docRef, {
-              uid: user.uid,
-              displayName: user.displayName,
-              email: user.email,
-              createdAt: serverTimestamp(),
-              enrolledCourses: [decodedCourseName],
-          });
+          await databases.createDocument(
+            appwriteConfig.databaseId,
+            collectionId,
+            documentId,
+            {
+                userId: user.$id,
+                name: user.name,
+                email: user.email,
+                createdAt: new Date().toISOString(),
+                enrolledCourses: [decodedCourseName],
+                phone: '',
+            }
+          );
         }
         toast({
           title: "Success",
@@ -83,8 +92,7 @@ export default function DashboardCoursesPage() {
     if (!isUserLoading) {
         enrollCourse();
     }
-  // The hook now correctly depends on all its dependencies
-  }, [user, isUserLoading, isDataLoading, userData, searchParams, firestore, router, toast]);
+  }, [user, isUserLoading, isDataLoading, userData, searchParams, databases, router, toast]);
 
   if (isUserLoading || isDataLoading) {
     return (

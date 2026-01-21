@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { UserRound, Menu, Send, Lock, Home as HomeIcon, BookOpen, Info, Calendar } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { useUser } from '@/appwrite';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 

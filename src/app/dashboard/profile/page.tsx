@@ -5,11 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { getAuth, updateProfile, signOut } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
 import { LogOut, BookOpen, User } from 'lucide-react';
 
-import { useUser, useFirebaseApp, useFirestore, useDoc } from '@/firebase';
+import { useUser, useAccount, useDatabases, useDoc, appwriteConfig } from '@/appwrite';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,25 +38,22 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ProfilePage() {
   const { user } = useUser();
-  const app = useFirebaseApp();
-  const firestore = useFirestore();
-  const auth = getAuth(app);
+  const account = useAccount();
+  const databases = useDatabases();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const userDocRef = useMemo(() => {
-    if (!user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
-
-  const { data: userData, isLoading: isDataLoading } = useDoc(userDocRef);
+  const { data: userData, isLoading: isDataLoading } = useDoc<any>(
+    appwriteConfig.usersCollectionId, 
+    user?.$id || null
+  );
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     values: {
-      displayName: userData?.displayName || user?.displayName || '',
-      collegeName: userData?.collegeName || '',
+      displayName: userData?.name || user?.name || '',
+      collegeName: userData?.institution || '',
     },
     mode: 'onChange',
   });
@@ -66,27 +61,28 @@ export default function ProfilePage() {
   useEffect(() => {
       if(userData) {
           form.reset({
-              displayName: userData.displayName || user?.displayName || '',
-              collegeName: userData.collegeName || '',
+              displayName: userData.name || user?.name || '',
+              collegeName: userData.institution || '',
           });
       }
   }, [userData, user, form]);
 
   const onSubmit: SubmitHandler<ProfileFormValues> = async (data) => {
-    if (!user || !userDocRef) return;
+    if (!user) return;
     setIsLoading(true);
 
     try {
-      if (auth.currentUser) {
-        await updateProfile(auth.currentUser, {
-          displayName: data.displayName,
-        });
-      }
+      await account.updateName(data.displayName);
 
-      await updateDoc(userDocRef, {
-        displayName: data.displayName,
-        collegeName: data.collegeName,
-      });
+      await databases.updateDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.usersCollectionId,
+        user.$id,
+        {
+          name: data.displayName,
+          institution: data.collegeName,
+        }
+      );
 
       toast({
         title: 'প্রোফাইল আপডেট হয়েছে',
@@ -105,7 +101,7 @@ export default function ProfilePage() {
   };
   
   const handleLogout = async () => {
-    await signOut(auth);
+    await account.deleteSession('current');
     router.push('/');
   };
 
