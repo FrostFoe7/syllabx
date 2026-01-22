@@ -7,8 +7,18 @@ import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CheckCircle2, Plus } from 'lucide-react';
 
+import { Models } from 'appwrite';
+
+interface Course extends Models.Document {
+    title: string;
+    image: string;
+    price: string;
+    description: string;
+    disabled?: boolean;
+}
+
 export default function AdminCoursesPage() {
-  const { data: dbCourses, isLoading } = useCollection<any>(appwriteConfig.coursesCollectionId);
+  const { data: dbCourses, isLoading } = useCollection<Course>(appwriteConfig.coursesCollectionId);
 
   const displayCourses = dbCourses && dbCourses.length > 0 ? dbCourses : [];
 
@@ -35,7 +45,7 @@ export default function AdminCoursesPage() {
           </div>
       ) : displayCourses.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {displayCourses.map((course: any) => (
+            {displayCourses.map((course) => (
                 <Card key={course.$id}>
                     <CardHeader className="p-0">
                         <Image src={course.image} alt={course.title} width={400} height={200} className="w-full h-32 object-cover rounded-t-lg" />

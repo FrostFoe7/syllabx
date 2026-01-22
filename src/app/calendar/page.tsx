@@ -5,6 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { UserRound, Menu, Send, Lock, Home as HomeIcon, BookOpen, Info, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { useUser, useCollection, appwriteConfig } from '@/appwrite';
+import { Models } from 'appwrite';
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,13 +14,15 @@ import { formatDistanceToNow, isAfter } from 'date-fns';
 import { bn } from 'date-fns/locale';
 
 function TimeRemaining({ dateTime }: { dateTime: string | null }) {
-    const [timeLeft, setTimeLeft] = useState<string>('');
+    const [timeLeft, setTimeLeft] = useState<string>(() => {
+        if (!dateTime) return 'সময় নির্ধারিত হয়নি';
+        const targetDate = new Date(dateTime);
+        if (isAfter(new Date(), targetDate)) return 'পরীক্ষা শেষ';
+        return formatDistanceToNow(targetDate, { locale: bn, addSuffix: true });
+    });
 
     useEffect(() => {
-        if (!dateTime) {
-            setTimeLeft('সময় নির্ধারিত হয়নি');
-            return;
-        }
+        if (!dateTime) return;
 
         const targetDate = new Date(dateTime);
         const update = () => {
@@ -29,7 +33,6 @@ function TimeRemaining({ dateTime }: { dateTime: string | null }) {
             }
         };
 
-        update();
         const interval = setInterval(update, 60000);
         return () => clearInterval(interval);
     }, [dateTime]);
@@ -40,7 +43,7 @@ function TimeRemaining({ dateTime }: { dateTime: string | null }) {
 export default function CalendarPage() {
   const [showMenu, setShowMenu] = useState(false);
   const { user } = useUser();
-  const { data: calendar, isLoading } = useCollection<any>(appwriteConfig.calendarCollectionId);
+  const { data: calendar, isLoading } = useCollection<{ date: string; topic: string; time?: string } & Models.Document>(appwriteConfig.calendarCollectionId);
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },

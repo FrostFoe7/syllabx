@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useUser, useDatabases, useDoc, useCollection, appwriteConfig } from '@/appwrite';
@@ -10,7 +10,23 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Calendar } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Models } from 'appwrite';
 
+interface UserData extends Models.Document {
+    enrolledCourses: string[];
+    name: string;
+    email: string;
+    phone: string;
+    institution?: string;
+}
+
+interface Course extends Models.Document {
+    title: string;
+    image: string;
+    slug: string;
+    startDate?: string;
+    imageHint?: string;
+}
 
 export default function DashboardCoursesPage() {
   const { user, isLoading: isUserLoading } = useUser();
@@ -19,12 +35,12 @@ export default function DashboardCoursesPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const { data: userData, isLoading: isDataLoading } = useDoc<any>(
+  const { data: userData, isLoading: isDataLoading } = useDoc<UserData>(
     appwriteConfig.usersCollectionId, 
     user?.$id || null
   );
 
-  const { data: allCourses, isLoading: isCoursesLoading } = useCollection<any>(
+  const { data: allCourses, isLoading: isCoursesLoading } = useCollection<Course>(
       appwriteConfig.coursesCollectionId
   );
 
@@ -79,7 +95,7 @@ export default function DashboardCoursesPage() {
           title: "Success",
           description: `Enrolled in ${decodedCourseName} successfully!`,
         });
-      } catch (e: any) {
+      } catch (e) {
           console.error("Error enrolling course: ", e);
           toast({
               variant: "destructive",
@@ -123,7 +139,7 @@ export default function DashboardCoursesPage() {
   }
 
   const enrolledCourseNames = userData?.enrolledCourses || [];
-  const enrolledCourses = allCourses?.filter(course => enrolledCourseNames.includes(course.title)) || [];
+  const enrolledCourses = allCourses?.filter((course: Course) => enrolledCourseNames.includes(course.title)) || [];
 
   return (
     <>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { databases, client, appwriteConfig } from '../config';
-import { Models, Query } from 'appwrite';
+import { Models } from 'appwrite';
 
 export const useCollection = <T extends Models.Document>(collectionId: string | null, queries: string[] = []) => {
   const [data, setData] = useState<T[] | null>(null);
@@ -26,8 +26,8 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
         );
         setData(result.documents);
         setError(null);
-      } catch (err: any) {
-        setError(err);
+      } catch (err) {
+        setError(err as Error);
       } finally {
         setIsLoading(false);
       }
@@ -37,7 +37,7 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
 
     const unsubscribe = client.subscribe(
       `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents`,
-      (response) => {
+      () => {
         // Simple implementation: re-fetch on any change in collection
         // For better performance, we could manually update the 'data' state based on payload
         fetchData();
@@ -47,7 +47,8 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
     return () => {
       unsubscribe();
     };
-  }, [collectionId, JSON.stringify(queries)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionId, queries.join(',')]);
 
   return { data, isLoading, error };
 };

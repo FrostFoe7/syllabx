@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { UserRound, BookOpen, Calendar, Info, Send, Menu, BookCopy, Home as HomeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useUser, useCollection, appwriteConfig } from '@/appwrite';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Models } from 'appwrite';
 
 const heroData = {
   title: 'তোমার <span class="text-accent">সেরা প্রস্তুতির</span> শুরু হোক এখানে থেকেই',
@@ -24,16 +25,10 @@ const actionButtonsData = [
 export default function Home() {
   const [showMenu, setShowMenu] = useState(false);
   const { user } = useUser();
-  const { data: categories, isLoading: catsLoading } = useCollection<any>(appwriteConfig.categoriesCollectionId);
-  const { data: allCoursesData, isLoading: coursesLoading } = useCollection<any>(appwriteConfig.coursesCollectionId);
+  const { data: categories, isLoading: catsLoading } = useCollection<{ name: string; slug: string } & Models.Document>(appwriteConfig.categoriesCollectionId);
+  const { data: allCoursesData, isLoading: coursesLoading } = useCollection<{ title: string; slug: string; image: string; price: string; disabled?: boolean; categoryId: string; imageHint?: string } & Models.Document>(appwriteConfig.coursesCollectionId);
   
   const [activeTab, setActiveTab] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (categories && categories.length > 0 && !activeTab) {
-        setActiveTab(categories[0].slug);
-    }
-  }, [categories, activeTab]);
 
   const currentTab = activeTab || (categories && categories.length > 0 ? categories[0].slug : null);
 

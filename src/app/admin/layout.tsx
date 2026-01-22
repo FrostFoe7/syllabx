@@ -14,7 +14,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 
-import { useUser, useAccount, useDoc, appwriteConfig } from '@/appwrite';
+import { useUser } from '@/appwrite';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,7 @@ const navItems = [
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const { user, isAdmin, isLoading, logout, refreshUser } = useUser();
+  const { user, isAdmin, isLoading, logout } = useUser();
   const router = useRouter();
   const pathname = usePathname();
 

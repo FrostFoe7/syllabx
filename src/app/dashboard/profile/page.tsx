@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Models } from 'appwrite';
 
 const profileFormSchema = z.object({
   displayName: z.string().min(1, 'নাম আবশ্যক'),
@@ -35,6 +36,12 @@ const profileFormSchema = z.object({
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
+
+interface UserData extends Models.Document {
+    name: string;
+    institution?: string;
+    enrolledCourses: string[];
+}
 
 export default function ProfilePage() {
   const { user, logout, refreshUser } = useUser();
@@ -44,7 +51,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { data: userData, isLoading: isDataLoading } = useDoc<any>(
+  const { data: userData, isLoading: isDataLoading } = useDoc<UserData>(
     appwriteConfig.usersCollectionId, 
     user?.$id || null
   );

@@ -39,12 +39,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       }
       
       setError(null);
-    } catch (err: any) {
-      if (err.code === 401) {
+    } catch (err) {
+      const appwriteErr = err as { code?: number; message?: string };
+      if (appwriteErr.code === 401) {
         setUser(null);
         setIsAdmin(false);
       } else {
-        setError(err);
+        setError(err as Error);
       }
     } finally {
       setIsLoading(false);
@@ -61,7 +62,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       await account.deleteSession("current");
       setUser(null);
       setIsAdmin(false);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Logout error:", err);
     } finally {
       setIsLoading(false);

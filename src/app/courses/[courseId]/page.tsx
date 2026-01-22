@@ -8,7 +8,7 @@ import { CheckCircle, Calendar, UserRound, Info, Send, Menu, Printer, Home as Ho
 import { useUser, useCollection, appwriteConfig } from '@/appwrite';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Query } from 'appwrite';
+import { Query, Models } from 'appwrite';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CourseDetailPage() {
@@ -16,14 +16,14 @@ export default function CourseDetailPage() {
   const router = useRouter();
   const courseId = params.courseId as string;
 
-  const { data: courses, isLoading: isCourseLoading } = useCollection<any>(
+  const { data: courses, isLoading: isCourseLoading } = useCollection<{ title: string; image: string; slug: string; price: string; startDate?: string; description?: string; features: string[]; disabled?: boolean; imageHint?: string } & Models.Document>(
       appwriteConfig.coursesCollectionId,
       [Query.equal('slug', courseId)]
   );
   
   const course = courses?.[0];
 
-  const { data: routine, isLoading: isRoutineLoading } = useCollection<any>(
+  const { data: routine, isLoading: isRoutineLoading } = useCollection<{ date: string; topic: string; time?: string } & Models.Document>(
       appwriteConfig.routinesCollectionId,
       [Query.equal('courseId', courseId)]
   );
@@ -135,7 +135,7 @@ export default function CourseDetailPage() {
                     <div className="bg-yellow-50/50 border border-yellow-200 rounded-xl p-6 my-6 print:hidden">
                         <h3 className="font-bold text-xl mb-4 font-tiro-bangla">কোর্সের ফিচারসমূহ</h3>
                         <div className="space-y-3">
-                        {course.features.map(feature => (
+                        {course.features.map((feature: string) => (
                             <div key={feature} className="flex items-start">
                                 <CheckCircle className="text-blue-500 mr-3 h-5 w-5 shrink-0 mt-1" />
                                 <span className="font-tiro-bangla text-base text-gray-800">{feature}</span>

@@ -11,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { ID } from 'appwrite';
-import { useAccount, useDatabases, appwriteConfig } from '@/appwrite';
+import { useAccount, useDatabases, appwriteConfig, useUser } from '@/appwrite';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,11 +37,7 @@ function LoginForm() {
   const databases = useDatabases();
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(
-      isLogin
-        ? formSchema.omit({ name: true })
-        : formSchema
-    ),
+    resolver: zodResolver(formSchema),
     defaultValues: { name: '', phone: '', password: '' }
   });
 
@@ -106,11 +102,12 @@ function LoginForm() {
       const redirectUrl = course ? `/dashboard?course=${encodeURIComponent(course)}` : '/dashboard';
       router.push(redirectUrl);
 
-    } catch (error: any) {
+    } catch (error) {
+      const appwriteErr = error as { code?: number; message?: string };
       console.error(error);
-      const errorMessage = error.code === 409
+      const errorMessage = appwriteErr.code === 409
         ? 'এই ফোন নম্বর দিয়ে ইতিমধ্যে অ্যাকাউন্ট তৈরি করা আছে।'
-        : error.code === 401
+        : appwriteErr.code === 401
         ? 'ভুল ফোন নম্বর অথবা পাসওয়ার্ড।'
         : 'একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।';
       

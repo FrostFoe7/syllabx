@@ -28,8 +28,8 @@ export const useDoc = <T extends Models.Document>(collectionId: string | null, d
           documentId
         );
         setData(result);
-      } catch (err: any) {
-        setError(err);
+      } catch (err) {
+        setError(err as Error);
       } finally {
         setIsLoading(false);
       }

@@ -11,7 +11,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 
-import { useUser, useDoc, appwriteConfig } from '@/appwrite';
+import { useUser } from '@/appwrite';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -75,9 +75,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2 text-gray-800">
               <span className={cn(
                 "font-semibold",
-                isBengali(user.displayName) ? 'font-tiro-bangla' : 'font-montserrat'
+                isBengali(user.name) ? 'font-tiro-bangla' : 'font-montserrat'
               )}>
-                  {user.displayName}
+                  {user.name}
               </span>
           </div>
         )}

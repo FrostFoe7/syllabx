@@ -10,7 +10,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { useAccount, useDatabases, appwriteConfig } from '@/appwrite';
+import { useAccount, useDatabases, appwriteConfig, useUser } from '@/appwrite';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,7 +62,7 @@ function AdminLoginForm() {
             router.push('/admin/dashboard');
             return;
         }
-      } catch (e: any) {
+      } catch {
           // Not an admin
           await account.deleteSession('current');
           toast({
@@ -72,9 +72,10 @@ function AdminLoginForm() {
           });
       }
 
-    } catch (error: any) {
+    } catch (error) {
+      const appwriteErr = error as { code?: number; message?: string };
       console.error(error);
-      const errorMessage = error.code === 401
+      const errorMessage = appwriteErr.code === 401
         ? 'ভুল ফোন নম্বর অথবা পাসওয়ার্ড।'
         : 'একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।';
       

@@ -4,13 +4,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Brain, Lightbulb, Mail, Rocket, Fingerprint, Globe, UserRound, Info, Github, Send, Menu, Home as HomeIcon, BookOpen, Calendar } from 'lucide-react';
 import { useState } from 'react';
-import { useUser, useAccount } from '@/appwrite';
+import { useUser } from '@/appwrite';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 
 export default function AboutPage() {
   const [showMenu, setShowMenu] = useState(false);
   const { user } = useUser();
-  const account = useAccount();
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },
@@ -19,10 +18,6 @@ export default function AboutPage() {
     { href: '/about', text: 'আমাদের সম্পর্কে', icon: Info },
   ];
 
-  const handleLogout = async () => {
-    await account.deleteSession('current');
-  };
-  
   const heroData = {
     subtitle: 'সহজ ব্যাখ্যা আর আধুনিক টেকনিকের মাধ্যমে আমরা তোমার সিলেবাসের ভয় দূর করবো ইনশাআল্লাহ্‌।'
   };
@@ -76,7 +71,7 @@ export default function AboutPage() {
           <span className="font-sans font-bold text-xs tracking-[0.3em] bg-black/20 px-4 py-2 rounded-full mb-4 inline-block">WHO WE ARE</span>
           <h1 className="text-xl md:text-2xl font-black mb-3 leading-tight">শিখুন প্রথাগত <br /> সীমানার বাইরে</h1>
           <p className="text-xs opacity-90 leading-relaxed font-medium font-tiro-bangla">
-            "সিলেবাসের বাইরে" শুধু একটি প্ল্যাটফর্ম নয়, এটি একটি শিক্ষা বিপ্লব। আমরা বিশ্বাস করি প্রকৃত জ্ঞান কোনো নির্দিষ্ট বই বা সিলেবাসে সীমাবদ্ধ নয়।
+            &quot;সিলেবাসের বাইরে&quot; শুধু একটি প্ল্যাটফর্ম নয়, এটি একটি শিক্ষা বিপ্লব। আমরা বিশ্বাস করি প্রকৃত জ্ঞান কোনো নির্দিষ্ট বই বা সিলেবাসে সীমাবদ্ধ নয়।
           </p>
         </div>
         
@@ -107,7 +102,7 @@ export default function AboutPage() {
                         <span className="text-yellow-600 font-sans font-bold text-xs tracking-widest uppercase">Owner & Founder</span>
                         <h2 className="text-base font-black mt-1 mb-1 font-tiro-bangla">শুআইব ইসলাম</h2>
                         <p className="text-gray-600 text-xs mb-2 leading-relaxed font-tiro-bangla">
-                            "সিলেবাসের বাইরে" এর প্রতিষ্ঠাতা হিসেবে আমি শিক্ষার্থীদের গতানুগতিক ধারার বাইরে চিন্তা করতে এবং প্রযুক্তির সহায়তায় নিজেকে আরও দক্ষ করে গড়ে তুলতে উদ্বুদ্ধ করি।
+                            &quot;সিলেবাসের বাইরে&quot; এর প্রতিষ্ঠাতা হিসেবে আমি শিক্ষার্থীদের গতানুগতিক ধারার বাইরে চিন্তা করতে এবং প্রযুক্তির সহায়তায় নিজেকে আরও দক্ষ করে গড়ে তুলতে উদ্বুদ্ধ করি।
                         </p>
                         <div className="flex justify-center md:justify-start gap-1.5">
                             <a href="mailto:mdshuyaibislam5050@gmail.com" className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-red-500 hover:text-white transition-all"><Mail size={14} /></a>
