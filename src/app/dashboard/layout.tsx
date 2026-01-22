@@ -11,7 +11,7 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 
-import { useUser } from '@/appwrite';
+import { useUser, useDoc, appwriteConfig } from '@/appwrite';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -26,17 +26,32 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  const { data: adminData, isLoading: isAdminChecking } = useDoc(
+    appwriteConfig.adminsCollectionId,
+    user?.$id || null
+  );
+
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    if (isUserLoading || isAdminChecking) return;
+
+    if (!user) {
       router.push('/login');
+      return;
     }
-  }, [isUserLoading, user, router]);
+
+    if (adminData) {
+        router.push('/admin/dashboard');
+    }
+  }, [isUserLoading, isAdminChecking, user, adminData, router]);
 
 
-  if (isUserLoading || !user) {
+  if (isUserLoading || isAdminChecking || !user || adminData) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#FFFDF5]">
-        <p>Loading...</p>
+        <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="font-tiro-bangla text-muted-foreground">লোডিং...</p>
+        </div>
       </div>
     );
   }

@@ -85,21 +85,19 @@ function LoginForm() {
       // Check if this user is an admin after login
       try {
         const user = await account.get();
-        console.log('Checking admin status for UID:', user.$id);
         const adminDoc = await databases.getDocument(
             appwriteConfig.databaseId,
             appwriteConfig.adminsCollectionId,
             user.$id
         );
         
-        console.log('Admin document found:', adminDoc);
         if (adminDoc) {
-            router.push('/admin');
+            toast({ title: 'অ্যাডমিন হিসেবে সফলভাবে লগইন হয়েছে' });
+            router.push('/admin/dashboard');
             return;
         }
       } catch (e: any) {
-          console.log('Admin check failed or user is not an admin:', e.message);
-          // If not an admin (404), continue to dashboard
+          console.log('User is not an admin, proceeding to student dashboard');
       }
 
       const course = searchParams.get('course');

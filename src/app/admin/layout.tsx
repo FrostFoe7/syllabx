@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const navItems = [
-  { href: '/admin', text: 'Home', icon: Home, exact: true },
+  { href: '/admin/dashboard', text: 'Home', icon: Home, exact: true },
   { href: '/admin/courses', text: 'Courses', icon: BookText },
   { href: '/admin/questions', text: 'Questions', icon: Upload },
   { href: '/admin/results', text: 'Results', icon: BarChart2 },
@@ -64,7 +64,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   
         if (!user) {
   
-          router.push('/login');
+          router.push('/admin/login');
   
           return;
   
