@@ -14,6 +14,8 @@ import {
 import { useUser } from '@/appwrite';
 import { cn } from '@/lib/utils';
 
+import * as React from 'react';
+
 const navItems = [
   { href: '/dashboard', text: 'কোর্স সমূহ', icon: LayoutGrid },
   { href: '/dashboard/exams', text: 'পরীক্ষা', icon: ClipboardList },
@@ -25,9 +27,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, isAdmin, isLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !mounted) return;
 
     if (!user) {
       router.push('/login');
@@ -37,10 +44,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (isAdmin) {
         router.push('/admin/dashboard');
     }
-  }, [isLoading, user, isAdmin, router]);
+  }, [isLoading, user, isAdmin, router, mounted]);
 
 
-  if (isLoading || !user || isAdmin) {
+  if (!mounted || isLoading || !user || isAdmin) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#FFFDF5]">
         <div className="text-center">

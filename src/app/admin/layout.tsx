@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import * as React from 'react';
+import { ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
@@ -39,15 +40,27 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, isAdmin, isLoading, logout } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
     router.push('/admin/login');
   };
   
-      useEffect(() => {
-        if (isLoading) return;
+      React.useEffect(() => {
+        if (isLoading || !mounted) return;
   
+        if (pathname === '/admin/login') {
+            if (user && isAdmin) {
+                router.push('/admin/dashboard');
+            }
+            return;
+        }
+
         if (!user) {
           router.push('/admin/login');
           return;
@@ -56,17 +69,21 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         if (!isAdmin) {
           router.push('/dashboard');
         }
-      }, [isLoading, user, isAdmin, router]);
+      }, [isLoading, user, isAdmin, router, pathname, mounted]);
   
-      if (isLoading) {
+      if (!mounted || isLoading) {
         return (
-          <div className="flex h-screen items-center justify-center bg-[#FFFDF5]" suppressHydrationWarning>
+          <div className="flex h-screen items-center justify-center bg-[#FFFDF5]">
             <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                 <p className="font-tiro-bangla text-muted-foreground">লোডিং...</p>
             </div>
           </div>
         );
+      }
+
+      if (pathname === '/admin/login') {
+          return <>{children}</>;
       }
     
       if (!isAdmin || !user) return null;

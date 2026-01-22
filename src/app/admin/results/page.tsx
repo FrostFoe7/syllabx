@@ -1,15 +1,40 @@
 'use client';
 
 import { useCollection, appwriteConfig } from '@/appwrite';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Clock, User as UserIcon, BookText } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { BarChart3, User as UserIcon, BookText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 
+import { Models } from 'appwrite';
+
+interface ResultDoc extends Models.Document {
+    userId: string;
+    examId: string;
+    marks: number;
+    correctAnswers: number;
+    wrongAnswers: number;
+    totalQuestions: number;
+    submittedAt: string;
+}
+
+interface Student extends Models.Document {
+    userId: string;
+    name: string;
+}
+
+interface Exam extends Models.Document {
+    originalId?: string;
+    title: string;
+}
+
 export default function AdminResultsPage() {
-  const { data: results, isLoading: resultsLoading } = useCollection<any>(appwriteConfig.resultsCollectionId);
-  const { data: students } = useCollection<any>(appwriteConfig.usersCollectionId);
-  const { data: exams } = useCollection<any>(appwriteConfig.examsCollectionId);
+  const { data: results, isLoading } = useCollection<ResultDoc>(
+    appwriteConfig.resultsCollectionId
+  );
+
+  const { data: students } = useCollection<Student>(appwriteConfig.usersCollectionId);
+  const { data: exams } = useCollection<Exam>(appwriteConfig.examsCollectionId);
 
   // Helper to find name by ID
   const getStudentName = (id: string) => students?.find(s => s.userId === id)?.name || 'Unknown Student';
@@ -24,7 +49,7 @@ export default function AdminResultsPage() {
         </p>
       </div>
 
-      {resultsLoading ? (
+      {isLoading ? (
         <div className="space-y-4">
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
@@ -32,7 +57,7 @@ export default function AdminResultsPage() {
         </div>
       ) : results && results.length > 0 ? (
         <div className="grid gap-4">
-          {results.sort((a:any, b:any) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()).map((result: any) => (
+          {[...results].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()).map((result) => (
             <Card key={result.$id}>
               <CardContent className="p-4 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-4">
@@ -49,14 +74,16 @@ export default function AdminResultsPage() {
                 
                 <div className="flex gap-8 text-center">
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase">Score</p>
-                    <p className="font-bold text-lg">{result.score}/{result.totalQuestions}</p>
+                    <p className="text-xs text-muted-foreground uppercase">Marks</p>
+                    <p className="font-bold text-lg">{result.marks.toFixed(2)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground uppercase">Percent</p>
-                    <p className={`font-bold text-lg ${result.percentage >= 40 ? 'text-green-600' : 'text-red-600'}`}>
-                      {result.percentage}%
-                    </p>
+                    <p className="text-xs text-muted-foreground uppercase">Correct/Wrong</p>
+                    <div className="flex items-center gap-2 font-bold">
+                        <span className="text-green-600">{result.correctAnswers}</span>
+                        <span className="text-gray-300">/</span>
+                        <span className="text-red-600">{result.wrongAnswers}</span>
+                    </div>
                   </div>
                   <div className="hidden sm:block">
                     <p className="text-xs text-muted-foreground uppercase">Date</p>

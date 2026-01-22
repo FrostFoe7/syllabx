@@ -25,14 +25,18 @@ function TimeRemaining({ dateTime }: { dateTime: string | null }) {
         if (!dateTime) return;
 
         const targetDate = new Date(dateTime);
-        const update = () => {
-            if (isAfter(new Date(), targetDate)) {
-                setTimeLeft('পরীক্ষা শেষ');
-            } else {
-                setTimeLeft(formatDistanceToNow(targetDate, { locale: bn, addSuffix: true }));
-            }
-        };
-
+            const update = () => {
+              try {
+                if (isAfter(new Date(), targetDate)) {
+                    setTimeLeft('পরীক্ষা শেষ');
+                } else {
+                    setTimeLeft(formatDistanceToNow(targetDate, { locale: bn, addSuffix: true }));
+                }
+              } catch (error) {
+                  const err = error as { message?: string };
+                  console.error('Timer update error:', err.message);
+              }
+            };
         const interval = setInterval(update, 60000);
         return () => clearInterval(interval);
     }, [dateTime]);
@@ -40,38 +44,112 @@ function TimeRemaining({ dateTime }: { dateTime: string | null }) {
     return <span>{timeLeft}</span>;
 }
 
+interface CalendarItem extends Models.Document {
+
+    date: string;
+
+    topic: string;
+
+    time?: string;
+
+    examDateTime?: string;
+
+}
+
+
+
 export default function CalendarPage() {
+
   const [showMenu, setShowMenu] = useState(false);
-  const { user } = useUser();
-  const { data: calendar, isLoading } = useCollection<{ date: string; topic: string; time?: string } & Models.Document>(appwriteConfig.calendarCollectionId);
+
+  const { user, isAdmin } = useUser();
+
+  const { data: calendar, isLoading } = useCollection<CalendarItem>(appwriteConfig.calendarCollectionId);
+
+
 
   const navLinks = [
+
     { href: '/', text: 'হোম', icon: HomeIcon },
+
     { href: '/#courses-section', text: 'কোর্সসমূহ', icon: BookOpen },
+
     { href: '/calendar', text: 'ক্যালেন্ডার', icon: CalendarIcon },
+
     { href: '/about', text: 'আমাদের সম্পর্কে', icon: Info },
+
+    ...(user ? (isAdmin ? [{ href: '/admin/dashboard', text: 'অ্যাডমিন প্যানেল', icon: UserRound }] : [{ href: '/dashboard', text: 'ড্যাশবোর্ড', icon: UserRound }]) : []),
+
   ];
 
+
+
   const heroData = {
-    subtitle: 'সহজ ব্যাখ্যা আর আধুনিক টেকনিকের মাধ্যমে আমরা তোমার সিলেবাসের ভয় দূর করবো ইনশাআল্লাহ্‌।'
+
+    subtitle: 'সহজ ব্যাখ্যা আর আধুনিক টেকনিকের মাধ্যমে আমরা তোমার সিলেবাসের ভয় দূর করবো ইন้าআল্লাহ্‌।'
+
   };
 
+
+
   return (
+
     <div className="bg-[#FFFDF5] text-foreground antialiased">
+
       {/* Header */}
+
       <header className="bg-white/95 px-2 lg:px-6 py-3 flex justify-between items-center sticky top-0 z-20 shadow-sm">
+
         <Link href="/">
+
           <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Logo" width={56} height={56} quality={100} className="h-14 w-auto" />
+
         </Link>
+
         
+
         <div className="flex items-center gap-4">
-          <Link href={user ? '/dashboard' : '/login'} className="no-underline bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:bg-gray-800 transition-all">
-              <UserRound size={16} className='bg-white text-black rounded-full p-0.5' />
-              <span className="font-montserrat">{user ? 'Dashboard' : 'Account'}</span>
-          </Link>
-           <button onClick={() => setShowMenu(true)} className="md:hidden p-2 rounded-md hover:bg-gray-100">
+
+          {!user ? (
+
+            <Link href="/login" className="no-underline bg-black text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:bg-gray-800 transition-all shadow-md">
+
+                <UserRound size={16} className='bg-white text-black rounded-full p-0.5' />
+
+                <span className="font-montserrat">Login</span>
+
+            </Link>
+
+          ) : isAdmin ? (
+
+            <Link href="/admin/dashboard" className="no-underline bg-accent text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:opacity-90 transition-all shadow-md">
+
+                <UserRound size={16} className='bg-white text-black rounded-full p-0.5' />
+
+                <span className="font-montserrat">Admin Panel</span>
+
+            </Link>
+
+          ) : (
+
+            <Link href="/dashboard" className="no-underline bg-black text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:bg-gray-800 transition-all shadow-md">
+
+                <UserRound size={16} className='bg-white text-black rounded-full p-0.5' />
+
+                <span className="font-montserrat">Dashboard</span>
+
+            </Link>
+
+          )}
+
+          
+
+          <button onClick={() => setShowMenu(true)} className="md:hidden p-2 rounded-md hover:bg-gray-100">
+
             <Menu className="h-6 w-6" />
+
           </button>
+
         </div>
         <Sheet open={showMenu} onOpenChange={setShowMenu}>
             <SheetContent side="left" className="p-0 w-[280px] bg-[#FFFDF5] border-r-yellow-200">
@@ -129,7 +207,7 @@ export default function CalendarPage() {
                             </TableRow>
                          ))
                      ) : calendar && calendar.length > 0 ? (
-                         calendar.map((item: any) => (
+                         calendar.map((item) => (
                             <TableRow key={item.$id}>
                                 <TableCell className="py-4 px-6 font-tiro-bangla font-bold">{item.subject}</TableCell>
                                 <TableCell className="py-4 px-6 font-tiro-bangla">

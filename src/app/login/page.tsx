@@ -94,7 +94,7 @@ function LoginForm() {
             router.push('/admin/dashboard');
             return;
         }
-      } catch (e: any) {
+      } catch {
           console.log('User is not an admin, proceeding to student dashboard');
       }
 

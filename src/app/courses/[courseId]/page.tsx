@@ -30,13 +30,14 @@ export default function CourseDetailPage() {
 
   // Header and menu state
   const [showMenu, setShowMenu] = useState(false);
-  const { user } = useUser();
+  const { user, isAdmin } = useUser();
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },
     { href: '/#courses-section', text: 'কোর্সসমূহ', icon: BookOpen },
     { href: '/calendar', text: 'ক্যালেন্ডার', icon: Calendar },
     { href: '/about', text: 'আমাদের সম্পর্কে', icon: Info },
+    ...(user ? (isAdmin ? [{ href: '/admin/dashboard', text: 'অ্যাডমিন প্যানেল', icon: UserRound }] : [{ href: '/dashboard', text: 'ড্যাশবোর্ড', icon: UserRound }]) : []),
   ];
 
   const executeRedirect = () => {
@@ -77,10 +78,22 @@ export default function CourseDetailPage() {
           <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Logo" width={60} height={60} quality={100} className="h-14 w-auto" />
         </Link>
         <div className="flex items-center gap-4">
-          <Link href={user ? '/dashboard' : '/login'} className="no-underline bg-black text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:bg-gray-800 transition-all">
-              <UserRound size={16} className='bg-white text-black rounded-full p-0.5'/>
-              <span className="font-montserrat">{user ? 'Dashboard' : 'Account'}</span>
-          </Link>
+          {!user ? (
+            <Link href="/login" className="no-underline bg-black text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:bg-gray-800 transition-all shadow-md">
+                <UserRound size={16} className='bg-white text-black rounded-full p-0.5' />
+                <span className="font-montserrat">Login</span>
+            </Link>
+          ) : isAdmin ? (
+            <Link href="/admin/dashboard" className="no-underline bg-accent text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:opacity-90 transition-all shadow-md">
+                <UserRound size={16} className='bg-white text-black rounded-full p-0.5' />
+                <span className="font-montserrat">Admin Panel</span>
+            </Link>
+          ) : (
+            <Link href="/dashboard" className="no-underline bg-black text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:bg-gray-800 transition-all shadow-md">
+                <UserRound size={16} className='bg-white text-black rounded-full p-0.5' />
+                <span className="font-montserrat">Dashboard</span>
+            </Link>
+          )}
           <button onClick={() => setShowMenu(true)} className="md:hidden p-2 rounded-md hover:bg-gray-100">
             <Menu className="h-6 w-6" />
           </button>
@@ -205,7 +218,7 @@ export default function CourseDetailPage() {
                               </tr>
                           </thead>
                           <tbody>
-                              {routine.map((item: any, index: number) => (
+                              {routine.map((item, index) => (
                                   <tr key={index} className="odd:bg-white even:bg-yellow-50/50 hover:bg-yellow-100 transition-colors">
                                       <td className="p-4 border-b border-yellow-100 text-gray-700">{item.date}</td>
                                       <td className="p-4 border-b border-yellow-100 text-gray-800 font-medium">{item.topic}</td>

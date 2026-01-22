@@ -81,7 +81,7 @@ async function createIndex(databaseId, collectionId, key, type, attributes) {
 async function setup() {
     console.log('Starting Appwrite Setup...');
 
-    const FORCE_RECREATE = true; // Set to true to reset collections
+    const FORCE_RECREATE = false; // Set to true to reset collections
 
     const ADMIN_PHONE = '00001';
     const ADMIN_PASSWORD = 'admin12345';
@@ -200,6 +200,7 @@ async function setup() {
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'startTime', 30, true);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'endTime', 30, true);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'float', 'negativeMark', null, true);
+    await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'courseId', 50, true);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'courseName', 255, true);
 
     // 4. Create Questions Collection
@@ -258,12 +259,16 @@ async function setup() {
         Permission.update(Role.users()),
     ]);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'userId', 36, true);
+    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'userName', 100, false);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'examId', 50, true);
-    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'float', 'score', null, true);
+    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'examTitle', 255, false);
+    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'courseId', 50, false);
+    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'float', 'marks', null, true);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'integer', 'totalQuestions', null, true);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'integer', 'correctAnswers', null, true);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'integer', 'wrongAnswers', null, true);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'submittedAt', 30, true);
+    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'answersJSON', 5000, false);
 
     // 8.5 Create Calendar Collection
     await getOrCreateCollection(CALENDAR_COLLECTION_ID, 'Calendar', [

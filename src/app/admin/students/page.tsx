@@ -8,8 +8,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { format } from 'date-fns';
 
+import { Models } from 'appwrite';
+
+interface Student extends Models.Document {
+    name: string;
+    email: string;
+    phone?: string;
+    createdAt?: string;
+}
+
 export default function AdminStudentsPage() {
-  const { data: students, isLoading } = useCollection<any>(
+  const { data: students, isLoading } = useCollection<Student>(
     appwriteConfig.usersCollectionId
   );
   const [searchTerm, setSearchTerm] = useState('');

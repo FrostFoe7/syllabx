@@ -5,18 +5,22 @@ import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { useUser, useDatabases, useDoc, useCollection, appwriteConfig } from '@/appwrite';
+import { useUser, useDoc, useCollection, appwriteConfig } from '@/appwrite';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Calendar, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
-interface Exam {
-    $id: string;
+interface Exam extends Models.Document {
     title: string;
-    courseName: string;
-    startTime: string; // ISO string in Appwrite
-    endTime: string; // ISO string in Appwrite
+    courseId: string;
+    courseName?: string;
+    startTime: string; 
+    endTime: string; 
     duration: number;
+}
+
+interface UserData extends Models.Document {
+    enrolledCourses: string[];
 }
 
 function ExamCard({ exam }: { exam: Exam }) {
@@ -68,7 +72,7 @@ function ExamCard({ exam }: { exam: Exam }) {
         <Card>
             <CardHeader>
                 <CardTitle>{exam.title}</CardTitle>
-                <CardDescription>{exam.courseName}</CardDescription>
+                <CardDescription>{exam.courseName || 'General'}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
@@ -121,21 +125,20 @@ function ExamList({ exams, status }: { exams: Exam[] | null, status: 'loading' |
 
 export default function ExamsPage() {
     const { user, isLoading: isUserLoading } = useUser();
-    const { data: userData, isLoading: isDataLoading } = useDoc<any>(
+    const { data: userData, isLoading: isDataLoading } = useDoc<UserData>(
         appwriteConfig.usersCollectionId,
         user?.$id || null
     );
 
-    const { data: allExams, isLoading: examsLoading } = useCollection<Exam & any>(
+    const { data: allExams, isLoading: examsLoading } = useCollection<Exam>(
         appwriteConfig.examsCollectionId
     );
     
-    const enrolledCourses = userData?.enrolledCourses || [];
-
     const filteredExams = useMemo(() => {
         if (!allExams) return [];
-        return allExams.filter(exam => enrolledCourses.includes(exam.courseName));
-    }, [allExams, enrolledCourses]);
+        const enrolledCourseIds = userData?.enrolledCourses || [];
+        return allExams.filter((exam) => enrolledCourseIds.includes(exam.courseId));
+    }, [allExams, userData?.enrolledCourses]);
 
     const categorizedExams = useMemo(() => {
         if (!filteredExams) {

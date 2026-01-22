@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { useCollection, appwriteConfig } from '@/appwrite';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CheckCircle2, Plus } from 'lucide-react';
+import { CheckCircle2, Plus, Pencil } from 'lucide-react';
+import Link from 'next/link';
 
 import { Models } from 'appwrite';
 
@@ -59,7 +60,12 @@ export default function AdminCoursesPage() {
                         <div className="flex items-center gap-1 text-xs text-green-600">
                             <CheckCircle2 size={14} /> {course.disabled ? 'Disabled' : 'Active'}
                         </div>
-                        <Button variant="ghost" size="sm">Edit</Button>
+                        <Link href={`/admin/courses/${course.$id}`}>
+                            <Button variant="ghost" size="sm" className="gap-1">
+                                <Pencil size={14} />
+                                Edit
+                            </Button>
+                        </Link>
                     </CardFooter>
                 </Card>
             ))}
