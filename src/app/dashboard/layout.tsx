@@ -22,30 +22,25 @@ const navItems = [
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { user, isLoading: isUserLoading } = useUser();
+  const { user, isAdmin, isLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
 
-  const { data: adminData, isLoading: isAdminChecking } = useDoc(
-    appwriteConfig.adminsCollectionId,
-    user?.$id || null
-  );
-
   useEffect(() => {
-    if (isUserLoading || isAdminChecking) return;
+    if (isLoading) return;
 
     if (!user) {
       router.push('/login');
       return;
     }
 
-    if (adminData) {
+    if (isAdmin) {
         router.push('/admin/dashboard');
     }
-  }, [isUserLoading, isAdminChecking, user, adminData, router]);
+  }, [isLoading, user, isAdmin, router]);
 
 
-  if (isUserLoading || isAdminChecking || !user || adminData) {
+  if (isLoading || !user || isAdmin) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#FFFDF5]">
         <div className="text-center">

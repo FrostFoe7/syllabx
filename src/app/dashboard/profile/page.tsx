@@ -37,7 +37,7 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ProfilePage() {
-  const { user } = useUser();
+  const { user, logout, refreshUser } = useUser();
   const account = useAccount();
   const databases = useDatabases();
   const router = useRouter();
@@ -73,6 +73,7 @@ export default function ProfilePage() {
 
     try {
       await account.updateName(data.displayName);
+      await refreshUser(); // Update global context
 
       await databases.updateDocument(
         appwriteConfig.databaseId,
@@ -101,7 +102,7 @@ export default function ProfilePage() {
   };
   
   const handleLogout = async () => {
-    await account.deleteSession('current');
+    await logout();
     router.push('/');
   };
 

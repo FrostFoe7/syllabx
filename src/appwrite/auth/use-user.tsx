@@ -1,33 +1,89 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { account } from "../config";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { account, databases, appwriteConfig } from "../config";
 import { Models } from "appwrite";
 
-export const useUser = () => {
+interface UserContextType {
+  user: Models.User<Models.Preferences> | null;
+  isAdmin: boolean;
+  isLoading: boolean;
+  error: Error | null;
+  refreshUser: () => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const UserContext = createContext<UserContextType | undefined>(undefined);
+
+export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    const checkUser = async () => {
+  const fetchUser = useCallback(async () => {
+    try {
+      const currentUser = await account.get();
+      setUser(currentUser);
+      
+      // Also check admin status globally
       try {
-        const currentUser = await account.get();
-        setUser(currentUser);
-      } catch (err: any) {
-        // Appwrite throws 401 if not logged in
-        if (err.code === 401) {
-          setUser(null);
-        } else {
-          setError(err);
-        }
-      } finally {
-        setIsLoading(false);
+        const adminDoc = await databases.getDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.adminsCollectionId,
+            currentUser.$id
+        );
+        setIsAdmin(!!adminDoc);
+      } catch {
+        setIsAdmin(false);
       }
-    };
-
-    checkUser();
+      
+      setError(null);
+    } catch (err: any) {
+      if (err.code === 401) {
+        setUser(null);
+        setIsAdmin(false);
+      } else {
+        setError(err);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  return { user, isLoading, error };
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  const logout = async () => {
+    setIsLoading(true);
+    try {
+      await account.deleteSession("current");
+      setUser(null);
+      setIsAdmin(false);
+    } catch (err: any) {
+      console.error("Logout error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const refreshUser = async () => {
+    setIsLoading(true);
+    await fetchUser();
+  };
+
+  return (
+    <UserContext.Provider value={{ user, isAdmin, isLoading, error, refreshUser, logout }}>
+      {children}
+    </UserContext.Provider>
+  );
+};
+
+export const useUser = () => {
+  const context = useContext(UserContext);
+  if (context === undefined) {
+    throw new Error("useUser must be used within a UserProvider");
+  }
+  return context;
 };

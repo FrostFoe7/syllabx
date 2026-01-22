@@ -28,6 +28,7 @@ function AdminLoginForm() {
   const { toast } = useToast();
   const router = useRouter();
 
+  const { refreshUser } = useUser();
   const account = useAccount();
   const databases = useDatabases();
 
@@ -45,6 +46,7 @@ function AdminLoginForm() {
     try {
       // Handle Login
       await account.createEmailPasswordSession(virtualEmail, password);
+      await refreshUser(); // Update global state
       
       // Check if this user is an admin
       try {

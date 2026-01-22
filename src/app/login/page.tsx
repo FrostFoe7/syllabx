@@ -32,6 +32,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const { refreshUser } = useUser();
   const account = useAccount();
   const databases = useDatabases();
 
@@ -57,12 +58,13 @@ function LoginForm() {
       if (isLogin) {
         // Handle Login
         await account.createEmailPasswordSession(virtualEmail, password);
-        // ... existing auth code ...
+        await refreshUser(); // Update global state
         toast({ title: 'সফলভাবে লগইন হয়েছে' });
       } else {
         // Handle Sign Up
         const newAccount = await account.create(ID.unique(), virtualEmail, password, name);
         await account.createEmailPasswordSession(virtualEmail, password);
+        await refreshUser(); // Update global state
 
         // Create user document in database
         await databases.createDocument(

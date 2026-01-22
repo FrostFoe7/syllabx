@@ -36,81 +36,40 @@ const navItems = [
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  const { user, isLoading: isUserLoading } = useUser();
+  const { user, isAdmin, isLoading, logout, refreshUser } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const account = useAccount();
-
-  // Check if user ID exists in admins collection
-  const { data: adminData, isLoading: isAdminChecking } = useDoc(
-    appwriteConfig.adminsCollectionId,
-    user?.$id || null
-  );
 
   const handleLogout = async () => {
-    await account.deleteSession('current');
-    router.push('/');
+    await logout();
+    router.push('/admin/login');
   };
   
-      const isAdmin = !!adminData || user?.$id === 'admin_user';
-  
-    
-  
       useEffect(() => {
-  
-        if (isUserLoading || isAdminChecking) return;
-  
-    
+        if (isLoading) return;
   
         if (!user) {
-  
           router.push('/admin/login');
-  
           return;
-  
         }
   
-    
-  
-        // Only redirect if NOT loading, and definitively not an admin
-  
-        if (!isAdminChecking && user && !isAdmin) {
-  
-          console.log('Final check: User is not an admin. Redirecting...');
-  
+        if (!isAdmin) {
           router.push('/dashboard');
-  
         }
+      }, [isLoading, user, isAdmin, router]);
   
-      }, [isUserLoading, isAdminChecking, user, isAdmin, router]);
-  
-    
-  
-      // Unified loading state
-  
-      if (isUserLoading || isAdminChecking) {
-  
+      if (isLoading) {
         return (
-  
           <div className="flex h-screen items-center justify-center bg-[#FFFDF5]" suppressHydrationWarning>
-  
             <div className="text-center">
-  
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-  
                 <p className="font-tiro-bangla text-muted-foreground">লোডিং...</p>
-  
             </div>
-  
           </div>
-  
         );
-  
       }
-  
     
-  
-      if (!isAdmin) return null;
+      if (!isAdmin || !user) return null;
   
     
   
