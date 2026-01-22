@@ -18,8 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const formSchema = z.object({
-  name: z.string(),
-  phone: z.string().min(5, 'সঠিক ফোন নম্বর প্রদান করুন'),
+  name: z.string().min(2, 'নাম কমপক্ষে ২ অক্ষরের হতে হবে'),
+  phone: z.string().regex(/^01[3-9]\d{8}$/, 'সঠিক বাংলাদেশি মোবাইল নম্বর প্রদান করুন (যেমন: 017xxxxxxxx)'),
   password: z.string().min(8, 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে'),
 });
 
@@ -60,7 +60,26 @@ function LoginForm() {
         // ... existing auth code ...
         toast({ title: 'সফলভাবে লগইন হয়েছে' });
       } else {
-        // ... signup code ...
+        // Handle Sign Up
+        const newAccount = await account.create(ID.unique(), virtualEmail, password, name);
+        await account.createEmailPasswordSession(virtualEmail, password);
+
+        // Create user document in database
+        await databases.createDocument(
+            appwriteConfig.databaseId, 
+            appwriteConfig.usersCollectionId,
+            newAccount.$id,
+            {
+                userId: newAccount.$id,
+                name: name,
+                phone: cleanPhone,
+                email: virtualEmail,
+                createdAt: new Date().toISOString(),
+                enrolledCourses: []
+            }
+        );
+
+        toast({ title: 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে' });
       }
       
       // Check if this user is an admin after login
