@@ -45,15 +45,11 @@ function TimeRemaining({ dateTime }: { dateTime: string | null }) {
 }
 
 interface CalendarItem extends Models.Document {
-
     date: string;
-
     topic: string;
-
+    subject?: string;
     time?: string;
-
-    examDateTime?: string;
-
+    examDateTime?: string | null;
 }
 
 
@@ -209,7 +205,7 @@ export default function CalendarPage() {
                      ) : calendar && calendar.length > 0 ? (
                          calendar.map((item) => (
                             <TableRow key={item.$id}>
-                                <TableCell className="py-4 px-6 font-tiro-bangla font-bold">{item.subject}</TableCell>
+                                <TableCell className="py-4 px-6 font-tiro-bangla font-bold">{item.subject || item.topic}</TableCell>
                                 <TableCell className="py-4 px-6 font-tiro-bangla">
                                     <div className="flex flex-col">
                                         <span>{item.date}</span>
@@ -217,7 +213,7 @@ export default function CalendarPage() {
                                     </div>
                                 </TableCell>
                                 <TableCell className="py-4 px-6 text-right font-tiro-bangla text-gray-600">
-                                    <TimeRemaining dateTime={item.examDateTime} />
+                                    <TimeRemaining dateTime={item.examDateTime || null} />
                                 </TableCell>
                             </TableRow>
                          ))

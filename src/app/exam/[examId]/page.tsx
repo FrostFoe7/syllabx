@@ -59,7 +59,9 @@ export default function ExamEnginePage() {
   // Enrollment Check - Move up to avoid conditional hook issues
   const isEnrolled = React.useMemo(() => {
       if (!userData || !exam) return true; // Loading or not found yet
-      return userData.enrolledCourses.includes(exam.courseId);
+      // Check both Name (preferred as per dashboard logic) and ID (fallback) to be safe
+      return (exam.courseName && userData.enrolledCourses.includes(exam.courseName)) || 
+             userData.enrolledCourses.includes(exam.courseId);
   }, [userData, exam]);
 
   const handleSubmit = React.useCallback(async () => {

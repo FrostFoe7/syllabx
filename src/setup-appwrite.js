@@ -112,7 +112,15 @@ async function setup() {
         }
 
         try {
-            return await databases.getCollection(DATABASE_ID, id);
+            const col = await databases.getCollection(DATABASE_ID, id);
+            // Update permissions for existing collection
+            try {
+                await databases.updateCollection(DATABASE_ID, id, name, permissions);
+                console.log(`Updated permissions for collection '${id}'`);
+            } catch (e) {
+                // Permissions might not change, which is ok
+            }
+            return col;
         } catch (error) {
             if (error.code === 404) {
                 const col = await databases.createCollection(DATABASE_ID, id, name, permissions);
@@ -231,6 +239,9 @@ async function setup() {
     // 6. Create Courses Collection
     await getOrCreateCollection(COURSES_COLLECTION_ID, 'Courses', [
         Permission.read(Role.any()),
+        Permission.create(Role.users()),
+        Permission.update(Role.users()),
+        Permission.delete(Role.users()),
     ]);
     await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'title', 255, true);
     await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'slug', 255, true);

@@ -32,10 +32,12 @@ export default function AdminCoursesPage() {
             View and manage courses directly from the database.
           </p>
         </div>
-        <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add New Course
-        </Button>
+        <Link href="/admin/courses/create">
+          <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add New Course
+          </Button>
+        </Link>
       </div>
 
       {isLoading ? (
@@ -73,7 +75,9 @@ export default function AdminCoursesPage() {
       ) : (
           <div className="text-center py-20 border-2 border-dashed rounded-xl">
               <p className="text-muted-foreground mb-4">No courses found in database.</p>
-              <Button>Add Your First Course</Button>
+              <Link href="/admin/courses/create">
+                <Button>Add Your First Course</Button>
+              </Link>
           </div>
       )}
     </div>

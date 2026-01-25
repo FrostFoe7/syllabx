@@ -48,8 +48,6 @@ function LoginForm() {
     const cleanPhone = phone.trim();
     const virtualEmail = `user_${cleanPhone}@syllabx.com`;
 
-    console.log('Attempting auth with:', { phone: cleanPhone, email: virtualEmail });
-
     try {
       if (isLogin) {
         // Handle Login
@@ -95,7 +93,7 @@ function LoginForm() {
             return;
         }
       } catch {
-          console.log('User is not an admin, proceeding to student dashboard');
+          // User is not an admin, proceed to student dashboard
       }
 
       const course = searchParams.get('course');

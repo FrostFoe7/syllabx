@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Models } from 'appwrite';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -136,8 +137,8 @@ export default function ExamsPage() {
     
     const filteredExams = useMemo(() => {
         if (!allExams) return [];
-        const enrolledCourseIds = userData?.enrolledCourses || [];
-        return allExams.filter((exam) => enrolledCourseIds.includes(exam.courseId));
+        const enrolledCourseNames = userData?.enrolledCourses || [];
+        return allExams.filter((exam) => enrolledCourseNames.includes(exam.courseName || exam.courseId));
     }, [allExams, userData?.enrolledCourses]);
 
     const categorizedExams = useMemo(() => {

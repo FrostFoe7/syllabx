@@ -40,10 +40,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const { user, isAdmin, isLoading, logout } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const [mounted, setMounted] = React.useState(false);
+  const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
-    setMounted(true);
+    setIsMounted(true);
   }, []);
 
   const handleLogout = async () => {
@@ -51,42 +51,47 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     router.push('/admin/login');
   };
   
-      React.useEffect(() => {
-        if (isLoading || !mounted) return;
-  
-        if (pathname === '/admin/login') {
-            if (user && isAdmin) {
-                router.push('/admin/dashboard');
-            }
-            return;
-        }
+  React.useEffect(() => {
+    if (!isMounted || isLoading) return;
 
-        if (!user) {
-          router.push('/admin/login');
-          return;
+    if (pathname === '/admin/login') {
+        if (user && isAdmin) {
+            router.push('/admin/dashboard');
         }
-  
-        if (!isAdmin) {
-          router.push('/dashboard');
-        }
-      }, [isLoading, user, isAdmin, router, pathname, mounted]);
-  
-      if (!mounted || isLoading) {
-        return (
-          <div className="flex h-screen items-center justify-center bg-[#FFFDF5]">
-            <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="font-tiro-bangla text-muted-foreground">লোডিং...</p>
-            </div>
-          </div>
-        );
-      }
+        return;
+    }
 
-      if (pathname === '/admin/login') {
-          return <>{children}</>;
-      }
-    
-      if (!isAdmin || !user) return null;
+    if (!user) {
+      router.push('/admin/login');
+      return;
+    }
+
+    if (!isAdmin) {
+      router.push('/dashboard');
+    }
+  }, [isLoading, user, isAdmin, router, pathname, isMounted]);
+
+  // Don't render protected content during hydration or loading
+  if (!isMounted) {
+    return null;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#FFFDF5]">
+        <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="font-tiro-bangla text-muted-foreground">লোডিং...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (pathname === '/admin/login') {
+      return <>{children}</>;
+  }
+
+  if (!isAdmin || !user) return null;
   
     
   

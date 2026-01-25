@@ -93,7 +93,7 @@ function AdminLoginForm() {
     <div className="flex justify-center items-center min-h-screen bg-[#FFFDF5] p-5">
       <div className="bg-white w-full max-w-md p-10 rounded-3xl shadow-lg text-center relative border-t-4 border-black">
         <div className="mb-6">
-          <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="সিলেবাসের বাইরে" width={100} height={100} className="mx-auto" />
+          <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="সিলেবাসের বাইরে" width={100} height={100} className="mx-auto" priority />
         </div>
 
         <div className="flex items-center justify-center gap-2 mb-2">
