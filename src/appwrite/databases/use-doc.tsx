@@ -41,13 +41,9 @@ export const useDoc = <T extends Models.Document>(collectionId: string | null, d
 
     const unsubscribe = client.subscribe(
       `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents.${documentId}`,
-      (response) => {
-        if (response.events.includes(`databases.*.collections.*.documents.*.update`)) {
-          setData(response.payload as T);
-        }
-        if (response.events.includes(`databases.*.collections.*.documents.*.delete`)) {
-          setData(null);
-        }
+      () => {
+        // A document was updated or deleted, refetch the data to be safe
+        fetchData();
       }
     );
 

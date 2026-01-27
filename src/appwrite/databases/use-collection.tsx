@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { databases, client, appwriteConfig } from '../config';
 import { Models } from 'appwrite';
 
@@ -9,18 +9,18 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // Stabilize the queries dependency by turning it into a string.
   const queriesString = JSON.stringify(queries);
 
-  const fetchData = useCallback(async (setLoading: boolean = false) => {
+  useEffect(() => {
+    const fetchData = async (setLoading: boolean = false) => {
       if (!collectionId) {
           setData(null);
           if (setLoading) setIsLoading(false);
           return;
       }
       
-      if (setLoading) {
-          setIsLoading(true);
-      }
+      if (setLoading) setIsLoading(true);
 
       try {
         const parsedQueries = JSON.parse(queriesString) as string[];
@@ -38,11 +38,9 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
             setIsLoading(false);
         }
       }
-  }, [collectionId, queriesString]);
-
-
-  useEffect(() => {
-    fetchData(true); // Initial fetch with loading state
+    };
+    
+    fetchData(true); // Initial fetch
 
     if (!collectionId) {
       return;
@@ -51,7 +49,7 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
     const unsubscribe = client.subscribe(
       `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents`,
       () => {
-        // Re-fetch on any change in collection without setting loading state
+        // Re-fetch on any change in collection
         fetchData(false);
       }
     );
@@ -59,7 +57,7 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
     return () => {
       unsubscribe();
     };
-  }, [collectionId, fetchData]);
+  }, [collectionId, queriesString]); // Dependencies are now stable strings
 
   return { data, isLoading, error };
 };
