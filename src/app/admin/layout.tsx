@@ -13,6 +13,7 @@ import {
   Users,
   LogOut,
   User as UserIcon,
+  CalendarCheck,
 } from 'lucide-react';
 
 import { useUser } from '@/appwrite';
@@ -31,6 +32,7 @@ import {
 const navItems = [
   { href: '/admin/dashboard', text: 'Home', icon: Home, exact: true },
   { href: '/admin/courses', text: 'Courses', icon: BookText },
+  { href: '/admin/routines', text: 'Routines', icon: CalendarCheck },
   { href: '/admin/questions', text: 'Questions', icon: Upload },
   { href: '/admin/results', text: 'Results', icon: BarChart2 },
   { href: '/admin/students', text: 'Students', icon: Users },
@@ -87,7 +89,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (pathname === '/admin/login') {
+  if (pathname === '/admin/login' || pathname.startsWith('/admin/print')) {
       return <>{children}</>;
   }
 
@@ -158,7 +160,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
       {/* Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white shadow-t-lg md:hidden">
-        <div className="mx-auto grid h-16 max-w-lg grid-cols-5 font-medium">
+        <div className="mx-auto grid h-16 max-w-lg grid-cols-6 font-medium">
           {navItems.map((item) => {
             const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             return (
@@ -166,7 +168,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 href={item.href} 
                 key={item.text} 
                 className={cn(
-                  "group inline-flex flex-col items-center justify-center px-2 text-center text-gray-500 hover:bg-gray-50 hover:text-primary",
+                  "group inline-flex flex-col items-center justify-center px-1 text-center text-gray-500 hover:bg-gray-50 hover:text-primary",
                   isActive && "text-primary"
                 )}
               >
