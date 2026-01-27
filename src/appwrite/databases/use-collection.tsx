@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { databases, client, appwriteConfig } from '../config';
 import { Models } from 'appwrite';
 
@@ -9,46 +9,57 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    if (!collectionId) {
-      setData(null);
-      setIsLoading(false);
-      return;
-    }
+  const queriesString = JSON.stringify(queries);
 
-    const fetchData = async () => {
-      setIsLoading(true);
+  const fetchData = useCallback(async (setLoading: boolean = false) => {
+      if (!collectionId) {
+          setData(null);
+          if (setLoading) setIsLoading(false);
+          return;
+      }
+      
+      if (setLoading) {
+          setIsLoading(true);
+      }
+
       try {
+        const parsedQueries = JSON.parse(queriesString) as string[];
         const result = await databases.listDocuments<T>(
           appwriteConfig.databaseId,
           collectionId,
-          queries
+          parsedQueries
         );
         setData(result.documents);
         setError(null);
       } catch (err) {
         setError(err as Error);
       } finally {
-        setIsLoading(false);
+        if (setLoading) {
+            setIsLoading(false);
+        }
       }
-    };
+  }, [collectionId, queriesString]);
 
-    fetchData();
+
+  useEffect(() => {
+    fetchData(true); // Initial fetch with loading state
+
+    if (!collectionId) {
+      return;
+    }
 
     const unsubscribe = client.subscribe(
       `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents`,
       () => {
-        // Simple implementation: re-fetch on any change in collection
-        // For better performance, we could manually update the 'data' state based on payload
-        fetchData();
+        // Re-fetch on any change in collection without setting loading state
+        fetchData(false);
       }
     );
 
     return () => {
       unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collectionId, queries.join(',')]);
+  }, [collectionId, fetchData]);
 
   return { data, isLoading, error };
 };

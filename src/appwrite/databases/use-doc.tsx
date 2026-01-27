@@ -10,17 +10,14 @@ export const useDoc = <T extends Models.Document>(collectionId: string | null, d
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Reset state and START loading immediately
-    setData(null);
-    setError(null);
-    setIsLoading(true);
-
     if (!collectionId || !documentId) {
+      setData(null);
       setIsLoading(false);
       return;
     }
 
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         const result = await databases.getDocument<T>(
           appwriteConfig.databaseId,
@@ -28,8 +25,13 @@ export const useDoc = <T extends Models.Document>(collectionId: string | null, d
           documentId
         );
         setData(result);
+        setError(null);
       } catch (err) {
-        setError(err as Error);
+        // Don't treat "not found" as a hard error
+        if ((err as { code?: number })?.code !== 404) {
+          setError(err as Error);
+        }
+        setData(null);
       } finally {
         setIsLoading(false);
       }
