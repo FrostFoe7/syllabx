@@ -155,22 +155,31 @@ export default function Home() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {allCoursesData?.filter(c => c.categoryId === currentTab).map(course => (
-                        <div key={course.slug} className="bg-white rounded-2xl overflow-hidden text-left shadow-lg transition-all duration-400 hover:-translate-y-2 hover:shadow-xl">
-                            <Image src={course.image} alt={course.title} width={400} height={200} className="w-full h-48 object-cover" data-ai-hint={course.imageHint} />
-                            <div className="p-6">
-                                <h3 className="text-xl font-bold mb-3 flex justify-between items-start font-montserrat">
-                                    <span className="flex-1 pr-2">{course.title}</span>
-                                    <span className={cn("text-white px-3 py-1 rounded-full text-sm font-semibold ml-2 align-middle whitespace-nowrap", course.price === 'EXPIRED' ? 'bg-destructive' : 'bg-green-500')}>
-                                        {course.price}
-                                    </span>
-                                </h3>
-                                
+                    {allCoursesData?.filter(c => !c.disabled && c.categoryId === currentTab).map(course => (
+                        <div key={course.slug} className="bg-white rounded-2xl overflow-hidden text-left shadow-lg transition-all duration-300 hover:shadow-2xl group">
+                            <div className="relative">
+                                <Image src={course.image} alt={course.title} width={400} height={200} className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105" data-ai-hint={course.imageHint} />
+                                <div className={cn(
+                                    "absolute top-4 right-4 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md",
+                                    course.price === 'EXPIRED' ? 'bg-destructive' : 'bg-green-600'
+                                )}>
+                                    {course.price}
+                                </div>
+                            </div>
+                            <div className="p-6 flex flex-col h-[calc(100%-12rem)]">
+                                <h3 className="text-xl font-bold font-tiro-bangla mb-4 flex-grow">{course.title}</h3>
                                 <Link
                                     href={`/courses/${course.slug}`}
-                                    className={cn("inline-block text-center bg-primary text-black px-6 py-3 rounded-lg no-underline font-bold mt-4 w-full transition-all duration-300 font-montserrat", 
-                                    course.disabled ? "bg-gray-400 cursor-not-allowed pointer-events-none" : "hover:bg-yellow-500 hover:-translate-y-1 hover:shadow-lg")}>
-                                    View Course details
+                                    className={cn(
+                                        "inline-block text-center bg-black text-white px-6 py-3 rounded-lg no-underline font-bold w-full transition-all duration-300 font-montserrat mt-auto", 
+                                        course.disabled 
+                                            ? "bg-gray-400 cursor-not-allowed" 
+                                            : "group-hover:bg-accent group-hover:text-white"
+                                    )}
+                                    aria-disabled={course.disabled}
+                                    onClick={(e) => { if (course.disabled) e.preventDefault(); }}
+                                >
+                                    কোর্সটি দেখুন
                                 </Link>
                             </div>
                         </div>
@@ -203,7 +212,7 @@ export default function Home() {
                 <li><Link href="/about" className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors font-tiro-bangla text-sm"><Info size={16} /><span>আমাদের সম্পর্কে</span></Link></li>
                 <li><Link href="/calendar" className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors font-tiro-bangla text-sm"><Calendar size={16} /><span>ক্যালেন্ডার</span></Link></li>
                 <li>
-                  <a href="https://t.me/syllabuserbaire" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors text-sm">
+                  <a href="https.me/syllabuserbaire" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors text-sm">
                     <Send size={16} />
                     <span className="font-tiro-bangla">টেলিগ্রাম চ্যানেল</span>
                   </a>

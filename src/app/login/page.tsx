@@ -52,13 +52,11 @@ function LoginForm() {
       if (isLogin) {
         // Handle Login
         await account.createEmailPasswordSession(virtualEmail, password);
-        await refreshUser(); // Update global state
         toast({ title: 'সফলভাবে লগইন হয়েছে' });
       } else {
         // Handle Sign Up
         const newAccount = await account.create(ID.unique(), virtualEmail, password, name);
         await account.createEmailPasswordSession(virtualEmail, password);
-        await refreshUser(); // Update global state
 
         // Create user document in database
         await databases.createDocument(
@@ -78,24 +76,10 @@ function LoginForm() {
         toast({ title: 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে' });
       }
       
-      // Check if this user is an admin after login
-      try {
-        const user = await account.get();
-        const adminDoc = await databases.getDocument(
-            appwriteConfig.databaseId,
-            appwriteConfig.adminsCollectionId,
-            user.$id
-        );
-        
-        if (adminDoc) {
-            toast({ title: 'অ্যাডমিন হিসেবে সফলভাবে লগইন হয়েছে' });
-            router.push('/admin/dashboard');
-            return;
-        }
-      } catch {
-          // User is not an admin, proceed to student dashboard
-      }
-
+      // After successful auth, refresh user data and redirect to dashboard.
+      // The layouts will handle redirecting admins to the admin panel.
+      await refreshUser(); 
+      
       const course = searchParams.get('course');
       const redirectUrl = course ? `/dashboard?course=${encodeURIComponent(course)}` : '/dashboard';
       router.push(redirectUrl);
