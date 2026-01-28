@@ -16,39 +16,46 @@ export const useDoc = <T extends Models.Document>(collectionId: string | null, d
       return;
     }
 
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const result = await databases.getDocument<T>(
-          appwriteConfig.databaseId,
-          collectionId,
-          documentId
-        );
-        setData(result);
-        setError(null);
-      } catch (err) {
-        // Don't treat "not found" as a hard error
-        if ((err as { code?: number })?.code !== 404) {
-          setError(err as Error);
+    let unsubscribe: (() => void) | undefined;
+
+    const fetchDataAndSubscribe = async () => {
+        setIsLoading(true);
+        try {
+          const result = await databases.getDocument<T>(
+            appwriteConfig.databaseId,
+            collectionId,
+            documentId
+          );
+          setData(result);
+          setError(null);
+        } catch (err) {
+          if ((err as { code?: number })?.code !== 404) {
+            setError(err as Error);
+          }
+          setData(null); // Document not found
+        } finally {
+          setIsLoading(false);
         }
-        setData(null);
-      } finally {
-        setIsLoading(false);
-      }
+
+        // Subscribe to changes for this specific document
+        unsubscribe = client.subscribe(
+            `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents.${documentId}`,
+            (response) => {
+                if (response.events.some(e => e.endsWith('.delete'))) {
+                    setData(null);
+                } else {
+                    setData(response.payload as T);
+                }
+            }
+        );
     };
 
-    fetchData();
-
-    const unsubscribe = client.subscribe(
-      `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents.${documentId}`,
-      () => {
-        // A document was updated or deleted, refetch the data to be safe
-        fetchData();
-      }
-    );
+    fetchDataAndSubscribe();
 
     return () => {
-      unsubscribe();
+        if (unsubscribe) {
+            unsubscribe();
+        }
     };
   }, [collectionId, documentId]);
 
