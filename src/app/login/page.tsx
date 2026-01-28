@@ -56,8 +56,7 @@ function LoginForm() {
       } else {
         // Handle Sign Up
         const newAccount = await account.create(ID.unique(), virtualEmail, password, name);
-        await account.createEmailPasswordSession(virtualEmail, password);
-
+        
         // Create user document in database
         await databases.createDocument(
             appwriteConfig.databaseId, 
@@ -72,6 +71,8 @@ function LoginForm() {
                 enrolledCourses: []
             }
         );
+        
+        await account.createEmailPasswordSession(virtualEmail, password);
 
         toast({ title: 'অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে' });
       }

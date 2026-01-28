@@ -176,10 +176,10 @@ export default function Home() {
                                 <Link
                                     href={`/courses/${course.slug}`}
                                     className={cn(
-                                        "inline-block text-center bg-black text-white px-6 py-3 rounded-lg no-underline font-bold w-full transition-all duration-300 font-montserrat mt-auto", 
+                                        "inline-block text-center bg-black text-white px-6 py-3 rounded-lg no-underline font-bold w-full transition-all duration-300 font-tiro-bangla mt-auto", 
                                         course.disabled 
                                             ? "bg-gray-400 cursor-not-allowed" 
-                                            : "group-hover:bg-accent group-hover:text-white"
+                                            : "group-hover:bg-primary group-hover:text-black"
                                     )}
                                     aria-disabled={course.disabled}
                                     onClick={(e) => { if (course.disabled) e.preventDefault(); }}
@@ -217,7 +217,7 @@ export default function Home() {
                 <li><Link href="/about" className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors font-tiro-bangla text-sm"><Info size={16} /><span>আমাদের সম্পর্কে</span></Link></li>
                 <li><Link href="/calendar" className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors font-tiro-bangla text-sm"><Calendar size={16} /><span>ক্যালেন্ডার</span></Link></li>
                 <li>
-                  <a href="https.me/syllabuserbaire" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors text-sm">
+                  <a href="https://t.me/syllabuserbaire" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors text-sm">
                     <Send size={16} />
                     <span className="font-tiro-bangla">টেলিগ্রাম চ্যানেল</span>
                   </a>
@@ -236,5 +236,3 @@ export default function Home() {
     </div>
   );
 }
-
-    

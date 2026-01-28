@@ -77,6 +77,10 @@ export default function DashboardCoursesPage() {
           );
         } else {
           // If userData is null, document doesn't exist, so create it.
+          const phoneFromEmail = user.email.startsWith('user_') && user.email.endsWith('@syllabx.com')
+            ? user.email.substring(5, user.email.indexOf('@'))
+            : '';
+
           await databases.createDocument(
             appwriteConfig.databaseId,
             collectionId,
@@ -87,7 +91,7 @@ export default function DashboardCoursesPage() {
                 email: user.email,
                 createdAt: new Date().toISOString(),
                 enrolledCourses: [decodedCourseName],
-                phone: '',
+                phone: phoneFromEmail,
             }
           );
         }
