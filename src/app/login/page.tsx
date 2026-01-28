@@ -86,7 +86,6 @@ function LoginForm() {
 
     } catch (error) {
       const appwriteErr = error as { code?: number; message?: string };
-      console.error(error);
       const errorMessage = appwriteErr.code === 409
         ? 'এই ফোন নম্বর দিয়ে ইতিমধ্যে অ্যাকাউন্ট তৈরি করা আছে।'
         : appwriteErr.code === 401

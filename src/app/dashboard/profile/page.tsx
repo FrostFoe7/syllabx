@@ -97,11 +97,11 @@ export default function ProfilePage() {
         description: 'আপনার তথ্য সফলভাবে সেভ হয়েছে।',
       });
     } catch (error) {
-      console.error('Error updating profile:', error);
+      const err = error as { message?: string };
       toast({
         variant: 'destructive',
         title: 'ত্রুটি',
-        description: 'প্রোফাইল আপডেট করার সময় একটি সমস্যা হয়েছে।',
+        description: err.message || 'প্রোফাইল আপডেট করার সময় একটি সমস্যা হয়েছে।',
       });
     } finally {
       setIsLoading(false);

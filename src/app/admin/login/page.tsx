@@ -74,7 +74,6 @@ function AdminLoginForm() {
 
     } catch (error) {
       const appwriteErr = error as { code?: number; message?: string };
-      console.error(error);
       const errorMessage = appwriteErr.code === 401
         ? 'ভুল ফোন নম্বর অথবা পাসওয়ার্ড।'
         : 'একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।';

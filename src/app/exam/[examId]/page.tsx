@@ -120,7 +120,6 @@ export default function ExamEnginePage() {
         router.push('/dashboard/results');
     } catch (error) {
         const err = error as { message?: string };
-        console.error("Submission Error:", error);
         toast({ title: "Error", description: err.message || "Failed to submit exam. Please try again.", variant: "destructive" });
         setIsSubmitting(false);
     }

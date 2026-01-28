@@ -200,7 +200,6 @@ export default function AdminQuestionsPage() {
       form.reset();
     } catch (error) {
       const err = error as { message?: string };
-      console.error('Error uploading exam:', error);
       toast({
         variant: 'destructive',
         title: 'Upload Failed',

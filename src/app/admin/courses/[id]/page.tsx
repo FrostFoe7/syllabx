@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -93,7 +92,6 @@ export default function CourseEditPage() {
       router.push('/admin/courses');
     } catch (error) {
       const appErr = error as { message?: string };
-      console.error(error);
       toast({
         variant: 'destructive',
         title: 'Error',

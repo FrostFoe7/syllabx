@@ -96,11 +96,11 @@ export default function DashboardCoursesPage() {
           description: `Enrolled in ${decodedCourseName} successfully!`,
         });
       } catch (e) {
-          console.error("Error enrolling course: ", e);
+          const err = e as { message?: string };
           toast({
               variant: "destructive",
               title: "Error",
-              description: "There was a problem enrolling in the course.",
+              description: err.message || "There was a problem enrolling in the course.",
           });
       } finally {
         // Clean up URL
