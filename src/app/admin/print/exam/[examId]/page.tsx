@@ -36,6 +36,12 @@ export default function PrintExamPage() {
         appwriteConfig.questionsCollectionId,
         [Query.equal('examId', examId), Query.orderAsc('$createdAt')]
     );
+
+    const [year, setYear] = React.useState<number>();
+
+    React.useEffect(() => {
+        setYear(new Date().getFullYear());
+    }, []);
     
     React.useEffect(() => {
         if (!examLoading && !questionsLoading) {
@@ -112,8 +118,10 @@ export default function PrintExamPage() {
             </main>
             
              <footer className="text-center mt-12 pt-4 border-t text-xs text-gray-500">
-                <p>&copy; {new Date().getFullYear()} SYLLABUSER BAIRE. All Rights Reserved.</p>
+                <p>&copy; {year} SYLLABUSER BAIRE. All Rights Reserved.</p>
              </footer>
         </div>
     );
 }
+
+    

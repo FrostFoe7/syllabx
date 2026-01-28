@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { UserRound, BookOpen, Calendar, Info, Send, Menu, BookCopy, Home as HomeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,11 @@ export default function Home() {
   const { data: allCoursesData, isLoading: coursesLoading } = useCollection<{ title: string; slug: string; image: string; price: string; disabled?: boolean; categoryId: string; imageHint?: string } & Models.Document>(appwriteConfig.coursesCollectionId);
   
   const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [year, setYear] = useState<number>();
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
 
   const currentTab = activeTab || (categories && categories.length > 0 ? categories[0].slug : null);
 
@@ -223,7 +228,7 @@ export default function Home() {
           
           <div className="mt-10 pt-8 border-t text-center">
             <p className="text-sm text-gray-500 font-montserrat">
-              &copy; {new Date().getFullYear()} SYLLABUSER BAIRE. All Rights Reserved.
+              &copy; {year} SYLLABUSER BAIRE. All Rights Reserved.
             </p>
           </div>
         </div>
@@ -231,3 +236,5 @@ export default function Home() {
     </div>
   );
 }
+
+    

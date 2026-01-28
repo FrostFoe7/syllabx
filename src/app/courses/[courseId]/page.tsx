@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -31,6 +31,11 @@ export default function CourseDetailPage() {
   // Header and menu state
   const [showMenu, setShowMenu] = useState(false);
   const { user, isAdmin } = useUser();
+  const [year, setYear] = useState<number>();
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },
@@ -269,7 +274,7 @@ export default function CourseDetailPage() {
           
           <div className="mt-10 pt-8 border-t text-center">
             <p className="text-sm text-gray-500 font-montserrat">
-              &copy; {new Date().getFullYear()} SYLLABUSER BAIRE. All Rights Reserved.
+              &copy; {year} SYLLABUSER BAIRE. All Rights Reserved.
             </p>
           </div>
         </div>
@@ -280,3 +285,6 @@ export default function CourseDetailPage() {
 
     
 
+
+
+    

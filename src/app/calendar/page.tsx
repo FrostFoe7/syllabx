@@ -14,31 +14,36 @@ import { formatDistanceToNow, isAfter } from 'date-fns';
 import { bn } from 'date-fns/locale';
 
 function TimeRemaining({ dateTime }: { dateTime: string | null }) {
-    const [timeLeft, setTimeLeft] = useState<string>(() => {
-        if (!dateTime) return 'সময় নির্ধারিত হয়নি';
-        const targetDate = new Date(dateTime);
-        if (isAfter(new Date(), targetDate)) return 'পরীক্ষা শেষ';
-        return formatDistanceToNow(targetDate, { locale: bn, addSuffix: true });
-    });
+    const [timeLeft, setTimeLeft] = useState<string>("...");
 
     useEffect(() => {
-        if (!dateTime) return;
+        if (!dateTime) {
+            setTimeLeft('সময় নির্ধারিত হয়নি');
+            return;
+        }
 
         const targetDate = new Date(dateTime);
-            const update = () => {
-              try {
-                if (isAfter(new Date(), targetDate)) {
-                    setTimeLeft('পরীক্ষা শেষ');
-                } else {
-                    setTimeLeft(formatDistanceToNow(targetDate, { locale: bn, addSuffix: true }));
+        let interval: NodeJS.Timeout | undefined = undefined;
+
+        const update = () => {
+            if (isAfter(new Date(), targetDate)) {
+                setTimeLeft('পরীক্ষা শেষ');
+                if (interval) {
+                    clearInterval(interval);
                 }
-              } catch (error) {
-                  const err = error as { message?: string };
-                  console.error('Timer update error:', err.message);
-              }
-            };
-        const interval = setInterval(update, 60000);
-        return () => clearInterval(interval);
+            } else {
+                setTimeLeft(formatDistanceToNow(targetDate, { locale: bn, addSuffix: true }));
+            }
+        };
+
+        update(); // Initial call
+        interval = setInterval(update, 60000); // Set up interval
+
+        return () => {
+            if (interval) {
+                clearInterval(interval); // Cleanup on unmount
+            }
+        };
     }, [dateTime]);
 
     return <span>{timeLeft}</span>;
@@ -57,6 +62,11 @@ interface CalendarItem extends Models.Document {
 export default function CalendarPage() {
 
   const [showMenu, setShowMenu] = useState(false);
+  const [year, setYear] = useState<number>();
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
 
   const { user, isAdmin } = useUser();
 
@@ -264,7 +274,7 @@ export default function CalendarPage() {
           </div>
           <div className="mt-10 pt-8 border-t text-center">
             <p className="text-sm text-gray-500 font-montserrat">
-              &copy; {new Date().getFullYear()} SYLLABUSER BAIRE. All Rights Reserved.
+              &copy; {year} SYLLABUSER BAIRE. All Rights Reserved.
             </p>
           </div>
         </div>
@@ -275,3 +285,6 @@ export default function CalendarPage() {
 
     
 
+
+
+    
