@@ -1,4 +1,4 @@
-import { Client, Databases, Permission, Role, ID, Storage, Users } from 'node-appwrite';
+import { Client, Databases, Permission, Role, Storage, Users } from 'node-appwrite';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -83,8 +83,8 @@ async function setup() {
 
     const FORCE_RECREATE = false; // Set to true to reset collections
 
-    const ADMIN_PHONE = '00001';
-    const ADMIN_PASSWORD = 'admin12345';
+    const ADMIN_PHONE = '01010101010';
+    const ADMIN_PASSWORD = 'admin1234';
     const ADMIN_NAME = 'System Admin';
     const ADMIN_VIRTUAL_EMAIL = `user_${ADMIN_PHONE}@syllabx.com`;
 
@@ -103,25 +103,25 @@ async function setup() {
 
     // Helper to recreate collection
     async function getOrCreateCollection(id, name, permissions) {
-        if (FORCE_RECREATE) {
-            try {
-                await databases.deleteCollection(DATABASE_ID, id);
-                console.log(`Deleted collection '${id}' for recreation.`);
-                await sleep(1000);
-            } catch (e) {}
-        }
-
-        try {
-            const col = await databases.getCollection(DATABASE_ID, id);
-            // Update permissions for existing collection
-            try {
-                await databases.updateCollection(DATABASE_ID, id, name, permissions);
-                console.log(`Updated permissions for collection '${id}'`);
-            } catch (e) {
-                // Permissions might not change, which is ok
-            }
-            return col;
-        } catch (error) {
+                if (FORCE_RECREATE) {
+                    try {
+                        await databases.deleteCollection(DATABASE_ID, id);
+                        console.log(`Deleted collection '${id}' for recreation.`);
+                        await sleep(1000);
+                    } catch { }
+                }
+        
+                try {
+                    const col = await databases.getCollection(DATABASE_ID, id);
+                    // Update permissions for existing collection
+                    try {
+                        await databases.updateCollection(DATABASE_ID, id, name, permissions);
+                        console.log(`Updated permissions for collection '${id}'`);
+                    } catch {
+                        // Permissions might not change, which is ok
+                    }
+                    return col;
+                } catch (error) {
             if (error.code === 404) {
                 const col = await databases.createCollection(DATABASE_ID, id, name, permissions);
                 console.log(`Created collection '${id}'`);
@@ -158,40 +158,40 @@ async function setup() {
     await createAttribute(DATABASE_ID, ADMINS_COLLECTION_ID, 'string', 'userId', 36, true);
 
     // 2.6 Create Default Admin User
-    let adminUserId = 'admin_user';
-    try {
-        await users.delete(adminUserId);
-        console.log('Deleted old admin user for refresh.');
-    } catch (err) {}
-
-    try {
-        const newUser = await users.create(adminUserId, ADMIN_VIRTUAL_EMAIL, undefined, ADMIN_PASSWORD, ADMIN_NAME);
-        console.log(`Created admin auth user: ${newUser.$id}`);
-        
-        // Ensure profile exists in users collection
-        try { await databases.deleteDocument(DATABASE_ID, USERS_COLLECTION_ID, adminUserId); } catch(e){}
-        await databases.createDocument(DATABASE_ID, USERS_COLLECTION_ID, adminUserId, {
-            userId: adminUserId,
-            name: ADMIN_NAME,
-            email: ADMIN_VIRTUAL_EMAIL,
-            phone: ADMIN_PHONE,
-            createdAt: new Date().toISOString(),
-            enrolledCourses: []
-        });
-    } catch (err) {
-        console.log('Admin user creation failed:', err.message);
-    }
-
-    // Add to Admins Collection if not there
-    try {
-        await databases.getDocument(DATABASE_ID, ADMINS_COLLECTION_ID, adminUserId);
-        console.log('Admin already registered in admins collection.');
-    } catch (error) {
-        await databases.createDocument(DATABASE_ID, ADMINS_COLLECTION_ID, adminUserId, {
-            userId: adminUserId
-        });
-        console.log('Admin registered in admins collection.');
-    }
+        let adminUserId = 'admin_user';
+        try {
+            await users.delete(adminUserId);
+            console.log('Deleted old admin user for refresh.');
+        } catch { }
+    
+        try {
+            const newUser = await users.create(adminUserId, ADMIN_VIRTUAL_EMAIL, undefined, ADMIN_PASSWORD, ADMIN_NAME);
+            console.log(`Created admin auth user: ${newUser.$id}`);
+            
+            // Ensure profile exists in users collection
+            try { await databases.deleteDocument(DATABASE_ID, USERS_COLLECTION_ID, adminUserId); } catch { }
+            await databases.createDocument(DATABASE_ID, USERS_COLLECTION_ID, adminUserId, {
+                userId: adminUserId,
+                name: ADMIN_NAME,
+                email: ADMIN_VIRTUAL_EMAIL,
+                phone: ADMIN_PHONE,
+                createdAt: new Date().toISOString(),
+                enrolledCourses: []
+            });
+        } catch (err) {
+            console.log('Admin user creation failed:', err.message);
+        }
+    
+        // Add to Admins Collection if not there
+        try {
+            await databases.getDocument(DATABASE_ID, ADMINS_COLLECTION_ID, adminUserId);
+            console.log('Admin already registered in admins collection.');
+        } catch {
+            await databases.createDocument(DATABASE_ID, ADMINS_COLLECTION_ID, adminUserId, {
+                userId: adminUserId
+            });
+            console.log('Admin registered in admins collection.');
+        }
 
     // 3. Create Exams Collection
     await getOrCreateCollection(EXAMS_COLLECTION_ID, 'Exams', [
@@ -429,3 +429,5 @@ async function setup() {
 }
 
 setup().catch(console.error);
+
+    

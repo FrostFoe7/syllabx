@@ -4,7 +4,7 @@ export const appwriteConfig = {
     endpoint: process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || '',
     projectId: process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID || '',
     databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || '',
-    usersCollectionId: process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || '',
+    usersCollectionId: process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || 'users',
     examsCollectionId: process.env.NEXT_PUBLIC_APPWRITE_EXAMS_COLLECTION_ID || 'exams',
     questionsCollectionId: process.env.NEXT_PUBLIC_APPWRITE_QUESTIONS_COLLECTION_ID || 'questions',
     coursesCollectionId: process.env.NEXT_PUBLIC_APPWRITE_COURSES_COLLECTION_ID || 'courses',

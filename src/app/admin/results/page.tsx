@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useCollection, appwriteConfig } from '@/appwrite';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart3, User as UserIcon, BookText, Download, FileQuestion, FileText } from 'lucide-react';
+import { BarChart3, User as UserIcon, BookText, FileQuestion, FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Models, Query } from 'appwrite';

@@ -4,10 +4,9 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useDoc, useCollection, appwriteConfig, useDatabases } from '@/appwrite';
 import { Models, Query, ID } from 'appwrite';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Loader2, Clock, AlertTriangle, ChevronLeft, ChevronRight, Send } from 'lucide-react';
+import { Loader2, Clock, AlertTriangle, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -44,7 +43,6 @@ export default function ExamEnginePage() {
   const databases = useDatabases();
   const { user } = useUser();
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
   const [selectedAnswers, setSelectedAnswers] = React.useState<Record<string, number>>({});
   const answersRef = React.useRef(selectedAnswers);
   answersRef.current = selectedAnswers;
@@ -202,9 +200,6 @@ export default function ExamEnginePage() {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  const currentQuestion = questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Exam Header */}
@@ -212,7 +207,7 @@ export default function ExamEnginePage() {
         <div className="container mx-auto flex justify-between items-center">
             <div>
                 <h1 className="font-bold text-lg md:text-xl truncate max-w-[200px] md:max-w-md">{exam.title}</h1>
-                <p className="text-xs text-muted-foreground">Question {currentQuestionIndex + 1} of {questions.length}</p>
+                <p className="text-xs text-muted-foreground">Total Questions: {questions.length}</p>
             </div>
             <div className="flex items-center gap-4">
                 <div className={`flex items-center gap-2 font-mono font-bold px-3 py-1 rounded-full text-lg ${timeLeft !== null && timeLeft < 300 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-gray-100'}`}>
@@ -225,54 +220,40 @@ export default function ExamEnginePage() {
                 </Button>
             </div>
         </div>
-        <Progress value={progress} className="h-1 mt-4" />
       </header>
 
       <main className="container mx-auto p-4 md:p-8 mt-4 max-w-3xl">
-        <Card className="shadow-xl border-none">
-            <CardContent className="pt-8">
-                <h2 className="text-lg md:text-xl font-medium mb-8 leading-relaxed">
-                    <span className="font-bold mr-2">{currentQuestionIndex + 1}.</span>
-                    {currentQuestion.q}
-                </h2>
+        <div className="space-y-6">
+          {questions.map((question, index) => (
+            <Card key={question.$id} className="shadow-xl border-none">
+              <CardContent className="pt-8">
+                  <h2 className="text-lg md:text-xl font-medium mb-8 leading-relaxed">
+                      <span className="font-bold mr-2">{index + 1}.</span>
+                      {question.q}
+                  </h2>
 
-                <RadioGroup 
-                    value={selectedAnswers[currentQuestion.$id]?.toString()} 
-                    onValueChange={(val) => setSelectedAnswers(prev => ({ ...prev, [currentQuestion.$id]: parseInt(val) }))}
-                    className="space-y-4"
-                >
-                    {[currentQuestion.a1, currentQuestion.a2, currentQuestion.a3, currentQuestion.a4].map((opt, i) => (
-                        <div key={i} className={`flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer hover:bg-gray-50 ${selectedAnswers[currentQuestion.$id] === i + 1 ? 'border-primary bg-primary/5' : 'border-transparent bg-gray-100'}`}>
-                            <RadioGroupItem value={(i + 1).toString()} id={`opt-${i}`} />
-                            <Label htmlFor={`opt-${i}`} className="flex-1 cursor-pointer text-base py-1">{opt}</Label>
-                        </div>
-                    ))}
-                </RadioGroup>
-            </CardContent>
-            <CardFooter className="flex justify-between border-t p-6 mt-8">
-                <Button 
-                    variant="outline" 
-                    onClick={() => setCurrentQuestionIndex(prev => prev - 1)} 
-                    disabled={currentQuestionIndex === 0}
-                    className="gap-2"
-                >
-                    <ChevronLeft size={18} /> Previous
-                </Button>
-                
-                {currentQuestionIndex === questions.length - 1 ? (
-                    <Button onClick={handleSubmit} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 gap-2">
-                         <Send size={18} /> Final Submit
-                    </Button>
-                ) : (
-                    <Button 
-                        onClick={() => setCurrentQuestionIndex(prev => prev + 1)}
-                        className="gap-2"
-                    >
-                        Next <ChevronRight size={18} />
-                    </Button>
-                )}
-            </CardFooter>
-        </Card>
+                  <RadioGroup 
+                      value={selectedAnswers[question.$id]?.toString()} 
+                      onValueChange={(val) => setSelectedAnswers(prev => ({ ...prev, [question.$id]: parseInt(val) }))}
+                      className="space-y-4"
+                  >
+                      {[question.a1, question.a2, question.a3, question.a4].map((opt, i) => (
+                          <div key={i} className={`flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer hover:bg-gray-50 ${selectedAnswers[question.$id] === i + 1 ? 'border-primary bg-primary/5' : 'border-transparent bg-gray-100'}`}>
+                              <RadioGroupItem value={(i + 1).toString()} id={`q-${question.$id}-opt-${i}`} />
+                              <Label htmlFor={`q-${question.$id}-opt-${i}`} className="flex-1 cursor-pointer text-base py-1">{opt}</Label>
+                          </div>
+                      ))}
+                  </RadioGroup>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        <div className="mt-8 text-center">
+            <Button size="lg" onClick={handleSubmit} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 gap-2">
+                 <Send size={18} /> Final Submit
+            </Button>
+        </div>
       </main>
     </div>
   );

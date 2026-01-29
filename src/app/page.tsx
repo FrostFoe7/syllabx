@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { UserRound, BookOpen, Calendar, Info, Send, Menu, BookCopy, Home as HomeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,11 +29,7 @@ export default function Home() {
   const { data: allCoursesData, isLoading: coursesLoading } = useCollection<{ title: string; slug: string; image: string; price: string; disabled?: boolean; categoryId: string; imageHint?: string } & Models.Document>(appwriteConfig.coursesCollectionId);
   
   const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [year, setYear] = useState<number>();
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
+  const [year] = useState(() => new Date().getFullYear());
 
   const currentTab = activeTab || (categories && categories.length > 0 ? categories[0].slug : null);
 

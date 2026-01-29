@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -23,7 +23,7 @@ export default function CourseDetailPage() {
   
   const course = courses?.[0];
 
-  const { data: routine, isLoading: isRoutineLoading } = useCollection<{ date: string; topic: string; time?: string } & Models.Document>(
+  const { data: routine } = useCollection<{ date: string; topic: string; time?: string } & Models.Document>(
       appwriteConfig.routinesCollectionId,
       [Query.equal('courseId', courseId)]
   );
@@ -31,11 +31,7 @@ export default function CourseDetailPage() {
   // Header and menu state
   const [showMenu, setShowMenu] = useState(false);
   const { user, isAdmin } = useUser();
-  const [year, setYear] = useState<number>();
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
+  const [year] = useState(() => new Date().getFullYear());
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },

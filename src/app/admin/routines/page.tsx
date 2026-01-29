@@ -10,9 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card';
 import {
   Table,
@@ -28,7 +25,6 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
     DialogFooter,
     DialogClose
 } from '@/components/ui/dialog';

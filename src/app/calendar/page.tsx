@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { UserRound, Menu, Send, Lock, Home as HomeIcon, BookOpen, Info, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { UserRound, Menu, Send, Lock, Home as HomeIcon, BookOpen, Info, Calendar as CalendarIcon } from 'lucide-react';
 import { useUser, useCollection, appwriteConfig } from '@/appwrite';
 import { Models } from 'appwrite';
 
@@ -14,11 +14,15 @@ import { formatDistanceToNow, isAfter } from 'date-fns';
 import { bn } from 'date-fns/locale';
 
 function TimeRemaining({ dateTime }: { dateTime: string | null }) {
-    const [timeLeft, setTimeLeft] = useState<string>("...");
+    const [timeLeft, setTimeLeft] = useState<string>(() => {
+        if (!dateTime) return 'সময় নির্ধারিত হয়নি';
+        const targetDate = new Date(dateTime);
+        if (isAfter(new Date(), targetDate)) return 'পরীক্ষা শেষ';
+        return formatDistanceToNow(targetDate, { locale: bn, addSuffix: true });
+    });
 
     useEffect(() => {
         if (!dateTime) {
-            setTimeLeft('সময় নির্ধারিত হয়নি');
             return;
         }
 
@@ -36,7 +40,6 @@ function TimeRemaining({ dateTime }: { dateTime: string | null }) {
             }
         };
 
-        update(); // Initial call
         interval = setInterval(update, 60000); // Set up interval
 
         return () => {
@@ -62,11 +65,7 @@ interface CalendarItem extends Models.Document {
 export default function CalendarPage() {
 
   const [showMenu, setShowMenu] = useState(false);
-  const [year, setYear] = useState<number>();
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
+  const [year] = useState(() => new Date().getFullYear());
 
   const { user, isAdmin } = useUser();
 

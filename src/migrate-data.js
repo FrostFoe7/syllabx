@@ -1,4 +1,4 @@
-import { Client, Databases, ID } from 'node-appwrite';
+import { Client, Databases } from 'node-appwrite';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';

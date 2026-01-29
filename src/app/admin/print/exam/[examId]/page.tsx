@@ -6,7 +6,6 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useDoc, useCollection, appwriteConfig } from '@/appwrite';
 import { Models, Query } from 'appwrite';
 import { Loader2, CheckCircle2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface ExamDoc extends Models.Document {
@@ -37,11 +36,7 @@ export default function PrintExamPage() {
         [Query.equal('examId', examId), Query.orderAsc('$createdAt')]
     );
 
-    const [year, setYear] = React.useState<number>();
-
-    React.useEffect(() => {
-        setYear(new Date().getFullYear());
-    }, []);
+    const [year] = React.useState(() => new Date().getFullYear());
     
     React.useEffect(() => {
         if (!examLoading && !questionsLoading) {

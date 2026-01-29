@@ -3,18 +3,14 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Brain, Lightbulb, Mail, Rocket, Fingerprint, Globe, UserRound, Info, Github, Send, Menu, Home as HomeIcon, BookOpen, Calendar } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useUser } from '@/appwrite';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 
 export default function AboutPage() {
   const [showMenu, setShowMenu] = useState(false);
   const { user, isAdmin } = useUser();
-  const [year, setYear] = useState<number>();
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
+  const [year] = useState(() => new Date().getFullYear());
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },
