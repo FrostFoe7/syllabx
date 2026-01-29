@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useDoc, useCollection, appwriteConfig, useDatabases } from '@/appwrite';
 import { Models, Query, ID } from 'appwrite';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Clock, AlertTriangle, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -35,6 +35,28 @@ interface UserData extends Models.Document {
     enrolledCourses: string[];
 }
 
+const QuestionNavigation = ({ questions, onQuestionSelect, currentQuestionIndex }: { questions: QuestionDoc[], onQuestionSelect: (index: number) => void, currentQuestionIndex: number }) => {
+    return (
+        <div className="sticky top-20 h-fit hidden md:block">
+            <Card>
+                <CardHeader><CardTitle className="text-lg">Questions</CardTitle></CardHeader>
+                <CardContent className="grid grid-cols-5 gap-2">
+                    {questions.map((q, index) => (
+                        <Button
+                            key={q.$id}
+                            variant={index === currentQuestionIndex ? 'default' : 'outline'}
+                            size="icon"
+                            onClick={() => onQuestionSelect(index)}
+                        >
+                            {index + 1}
+                        </Button>
+                    ))}
+                </CardContent>
+            </Card>
+        </div>
+    );
+};
+
 export default function ExamEnginePage() {
   const params = useParams();
   const examId = params.examId as string;
@@ -50,6 +72,8 @@ export default function ExamEnginePage() {
   const [timeLeft, setTimeLeft] = React.useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isFinished, setIsFinished] = React.useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
+  const questionRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
   const { data: exam, isLoading: examLoading } = useDoc<ExamDoc>(appwriteConfig.examsCollectionId, examId);
   const { data: questions, isLoading: questionsLoading } = useCollection<QuestionDoc>(
@@ -167,6 +191,35 @@ export default function ExamEnginePage() {
       return () => clearInterval(timerId);
   }, [timeLeft, isFinished, handleSubmit]);
 
+  const handleQuestionSelect = (index: number) => {
+    questionRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const index = parseInt((entry.target as HTMLElement).dataset.index || '0', 10);
+                    setCurrentQuestionIndex(index);
+                }
+            });
+        },
+        { rootMargin: '-50% 0px -50% 0px' }
+    );
+
+    const refs = questionRefs.current;
+    refs.forEach(ref => {
+        if (ref) observer.observe(ref);
+    });
+
+    return () => {
+        refs.forEach(ref => {
+            if (ref) observer.unobserve(ref);
+        });
+    };
+}, [questions]);
+
 
   if (examLoading || questionsLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -202,7 +255,6 @@ export default function ExamEnginePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Exam Header */}
       <header className="sticky top-0 z-30 bg-white border-b shadow-sm p-4">
         <div className="container mx-auto flex justify-between items-center">
             <div>
@@ -222,37 +274,49 @@ export default function ExamEnginePage() {
         </div>
       </header>
 
-      <main className="container mx-auto p-4 md:p-8 mt-4 max-w-3xl">
-        <div className="space-y-6">
-          {questions.map((question, index) => (
-            <Card key={question.$id} className="shadow-xl border-none">
-              <CardContent className="pt-8">
-                  <h2 className="text-lg md:text-xl font-medium mb-8 leading-relaxed">
-                      <span className="font-bold mr-2">{index + 1}.</span>
-                      {question.q}
-                  </h2>
+      <main className="container mx-auto p-4 md:p-8 mt-4">
+        <div className="grid md:grid-cols-[1fr_280px] gap-8 items-start">
+            <div className="space-y-6">
+                {questions.map((question, index) => (
+                    <Card 
+                        key={question.$id} 
+                        className="shadow-xl border-none"
+                        ref={el => questionRefs.current[index] = el}
+                        data-index={index}
+                    >
+                    <CardContent className="pt-8">
+                        <h2 className="text-lg md:text-xl font-medium mb-8 leading-relaxed">
+                            <span className="font-bold mr-2">{index + 1}.</span>
+                            {question.q}
+                        </h2>
 
-                  <RadioGroup 
-                      value={selectedAnswers[question.$id]?.toString()} 
-                      onValueChange={(val) => setSelectedAnswers(prev => ({ ...prev, [question.$id]: parseInt(val) }))}
-                      className="space-y-4"
-                  >
-                      {[question.a1, question.a2, question.a3, question.a4].map((opt, i) => (
-                          <div key={i} className={`flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer hover:bg-gray-50 ${selectedAnswers[question.$id] === i + 1 ? 'border-primary bg-primary/5' : 'border-transparent bg-gray-100'}`}>
-                              <RadioGroupItem value={(i + 1).toString()} id={`q-${question.$id}-opt-${i}`} />
-                              <Label htmlFor={`q-${question.$id}-opt-${i}`} className="flex-1 cursor-pointer text-base py-1">{opt}</Label>
-                          </div>
-                      ))}
-                  </RadioGroup>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        
-        <div className="mt-8 text-center">
-            <Button size="lg" onClick={handleSubmit} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 gap-2">
-                 <Send size={18} /> Final Submit
-            </Button>
+                        <RadioGroup 
+                            value={selectedAnswers[question.$id]?.toString()} 
+                            onValueChange={(val) => setSelectedAnswers(prev => ({ ...prev, [question.$id]: parseInt(val) }))}
+                            className="space-y-4"
+                        >
+                            {[question.a1, question.a2, question.a3, question.a4].map((opt, i) => (
+                                <div key={i} className={`flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer hover:bg-gray-50 ${selectedAnswers[question.$id] === i + 1 ? 'border-primary bg-primary/5' : 'border-transparent bg-gray-100'}`}>
+                                    <RadioGroupItem value={(i + 1).toString()} id={`q-${question.$id}-opt-${i}`} />
+                                    <Label htmlFor={`q-${question.$id}-opt-${i}`} className="flex-1 cursor-pointer text-base py-1">{opt}</Label>
+                                </div>
+                            ))}
+                        </RadioGroup>
+                    </CardContent>
+                    </Card>
+                ))}
+                <div className="mt-8 text-center">
+                    <Button size="lg" onClick={handleSubmit} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 gap-2">
+                        <Send size={18} /> Final Submit
+                    </Button>
+                </div>
+            </div>
+
+            <QuestionNavigation 
+                questions={questions} 
+                onQuestionSelect={handleQuestionSelect}
+                currentQuestionIndex={currentQuestionIndex} 
+            />
         </div>
       </main>
     </div>

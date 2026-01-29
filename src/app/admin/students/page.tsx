@@ -25,7 +25,8 @@ export default function AdminStudentsPage() {
 
   const filteredStudents = students?.filter(student => 
       student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.phone?.includes(searchTerm)
   ) || [];
 
   return (
@@ -45,7 +46,7 @@ export default function AdminStudentsPage() {
         <CardContent>
             <div className="flex items-center py-4">
                 <Input
-                    placeholder="Search students by name or email..."
+                    placeholder="Search students by name, email, or phone..."
                     className="max-w-sm"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -60,16 +61,16 @@ export default function AdminStudentsPage() {
                </div>
           ) : filteredStudents.length > 0 ? (
                <div className="rounded-md border">
-                   <div className="grid grid-cols-4 p-4 font-medium border-b bg-muted/50">
+                   <div className="grid grid-cols-4 p-4 font-medium border-b bg-muted/50 text-sm">
                        <div>Name</div>
                        <div>Email</div>
-                       <div>Phone</div>
+                       <div>Login ID (Phone)</div>
                        <div>Joined</div>
                    </div>
                    {filteredStudents.map((student) => (
-                       <div key={student.$id} className="grid grid-cols-4 p-4 border-b last:border-0 hover:bg-muted/50 transition-colors">
+                       <div key={student.$id} className="grid grid-cols-4 p-4 border-b last:border-0 hover:bg-muted/50 transition-colors items-center">
                            <div className="font-medium">{student.name}</div>
-                           <div className="text-sm text-muted-foreground">{student.email}</div>
+                           <div className="text-sm text-muted-foreground truncate">{student.email}</div>
                            <div className="text-sm text-muted-foreground">{student.phone || 'N/A'}</div>
                            <div className="text-sm text-muted-foreground">
                                {student.createdAt ? format(new Date(student.createdAt), 'PP') : 'N/A'}

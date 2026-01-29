@@ -3,14 +3,16 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useDoc, useCollection, appwriteConfig } from '@/appwrite';
+import { useUser, useDoc, useCollection, appwriteConfig } from '@/appwrite';
 import { Models, Query } from 'appwrite';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Info } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Info, BarChart3, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ResultDoc extends Models.Document {
+    userId: string;
     examId: string;
     examTitle: string;
     marks: number;
@@ -19,6 +21,14 @@ interface ResultDoc extends Models.Document {
     wrongAnswers: number;
     answersJSON: string;
     submittedAt: string;
+}
+
+interface ExamDoc extends Models.Document {
+    endTime: string;
+}
+
+interface StudentDoc extends Models.Document {
+    name: string;
 }
 
 interface QuestionDoc extends Models.Document {
@@ -35,12 +45,26 @@ export default function ResultDetailPage() {
   const params = useParams();
   const resultId = params.resultId as string;
   const router = useRouter();
+  const { user } = useUser();
 
   const { data: result, isLoading: resultLoading } = useDoc<ResultDoc>(appwriteConfig.resultsCollectionId, resultId);
+  
+  const examId = result?.examId;
+
   const { data: questions, isLoading: questionsLoading } = useCollection<QuestionDoc>(
     appwriteConfig.questionsCollectionId,
-    [Query.equal('examId', result?.examId || '')]
+    examId ? [Query.equal('examId', examId)] : []
   );
+  
+  const { data: exam, isLoading: examLoading } = useDoc<ExamDoc>(appwriteConfig.examsCollectionId, examId);
+  
+  const { data: allResults, isLoading: allResultsLoading } = useCollection<ResultDoc>(
+      appwriteConfig.resultsCollectionId, 
+      examId ? [Query.equal('examId', examId)] : []
+  );
+
+  const { data: allStudents, isLoading: studentsLoading } = useCollection<StudentDoc>(appwriteConfig.usersCollectionId);
+
 
   const userAnswers = React.useMemo(() => {
     if (!result?.answersJSON) return {};
@@ -51,7 +75,28 @@ export default function ResultDetailPage() {
     }
   }, [result]);
 
-  if (resultLoading || (result && questionsLoading)) {
+  const { meritList, userRank } = React.useMemo(() => {
+    if (!allResults || !allStudents || !exam || !user) return { meritList: [], userRank: null };
+
+    const examEndTime = new Date(exam.endTime);
+    const validResults = allResults
+        .filter(r => new Date(r.submittedAt) <= examEndTime)
+        .map(r => {
+            const student = allStudents.find(s => s.$id === r.userId);
+            return {
+                ...r,
+                studentName: student?.name || 'Unknown',
+            };
+        })
+        .sort((a, b) => b.marks - a.marks);
+    
+    const rank = validResults.findIndex(r => r.userId === user.$id) + 1;
+
+    return { meritList: validResults, userRank: rank > 0 ? rank : null };
+  }, [allResults, allStudents, exam, user]);
+
+
+  if (resultLoading || questionsLoading || examLoading || allResultsLoading || studentsLoading) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
@@ -93,6 +138,25 @@ export default function ResultDetailPage() {
               </CardContent>
           </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <Trophy className="text-primary" />
+                Merit Position
+            </CardTitle>
+        </CardHeader>
+        <CardContent>
+            {userRank ? (
+                <p className="text-lg">
+                    Your rank is <span className="font-bold text-2xl text-primary">{userRank}</span> out of {meritList.length} participants who completed on time.
+                </p>
+            ) : (
+                <p className="text-muted-foreground">Your result was not included in the merit list because it was submitted after the deadline.</p>
+            )}
+        </CardContent>
+      </Card>
+
 
       {/* Question Breakdown */}
       <div className="space-y-6">

@@ -143,11 +143,11 @@ export default function ExamsPage() {
 
     const categorizedExams = useMemo(() => {
         if (!filteredExams) {
-            return { today: [], past: [], upcoming: [] };
+            return { active: [], past: [], upcoming: [] };
         }
 
         const now = new Date();
-        const today: Exam[] = [];
+        const active: Exam[] = [];
         const past: Exam[] = [];
         const upcoming: Exam[] = [];
 
@@ -160,10 +160,10 @@ export default function ExamsPage() {
             } else if (startTime > now) {
                 upcoming.push(exam);
             } else {
-                today.push(exam);
+                active.push(exam);
             }
         }
-        return { today, past, upcoming };
+        return { active, past, upcoming };
     }, [filteredExams]);
 
     const isLoading = isUserLoading || isDataLoading || examsLoading;
@@ -175,15 +175,15 @@ export default function ExamsPage() {
         <p className="text-muted-foreground font-tiro-bangla">আপনার চলমান, অতীত এবং আসন্ন পরীক্ষাসমূহ দেখুন।</p>
       </div>
 
-      <Tabs defaultValue="today" className="w-full">
+      <Tabs defaultValue="active" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="today">আজকের পরীক্ষা</TabsTrigger>
+          <TabsTrigger value="active">চলমান পরীক্ষা</TabsTrigger>
           <TabsTrigger value="past">গত পরীক্ষা</TabsTrigger>
           <TabsTrigger value="upcoming">আগামী পরীক্ষা</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="today">
-            <ExamList exams={categorizedExams.today} status={isLoading ? 'loading' : 'success'} />
+        <TabsContent value="active">
+            <ExamList exams={categorizedExams.active} status={isLoading ? 'loading' : 'success'} />
         </TabsContent>
         
         <TabsContent value="past">

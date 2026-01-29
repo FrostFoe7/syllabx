@@ -27,7 +27,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { ID } from 'appwrite';
+import { ID, Query } from 'appwrite';
 import { useDatabases, useCollection, appwriteConfig } from '@/appwrite';
 import { ExamFormSchema, ExamFormValues } from './schema';
 import { Trash2, AlertCircle, Plus, FileJson, LayoutList } from 'lucide-react';
@@ -99,7 +99,7 @@ export default function AdminQuestionsPage() {
         const questionsResult = await databases.listDocuments(
             appwriteConfig.databaseId,
             appwriteConfig.questionsCollectionId,
-            [`equal("examId", "${examId}")`]
+            [Query.equal("examId", examId)]
         );
         
         const deletePromises = questionsResult.documents.map(q => 
