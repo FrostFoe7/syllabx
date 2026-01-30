@@ -7,39 +7,9 @@ import { useUser, useDoc, useCollection, appwriteConfig } from '@/appwrite';
 import { Models, Query } from 'appwrite';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Info, BarChart3, Trophy } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Info, Trophy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-
-interface ResultDoc extends Models.Document {
-    userId: string;
-    examId: string;
-    examTitle: string;
-    marks: number;
-    totalQuestions: number;
-    correctAnswers: number;
-    wrongAnswers: number;
-    answersJSON: string;
-    submittedAt: string;
-}
-
-interface ExamDoc extends Models.Document {
-    endTime: string;
-}
-
-interface StudentDoc extends Models.Document {
-    name: string;
-}
-
-interface QuestionDoc extends Models.Document {
-    q: string;
-    a1: string;
-    a2: string;
-    a3: string;
-    a4: string;
-    ans: number;
-    exp: string;
-}
+import { Result, Exam, UserData as StudentDoc, Question as QuestionDoc } from '@/types';
 
 export default function ResultDetailPage() {
   const params = useParams();
@@ -47,18 +17,18 @@ export default function ResultDetailPage() {
   const router = useRouter();
   const { user } = useUser();
 
-  const { data: result, isLoading: resultLoading } = useDoc<ResultDoc>(appwriteConfig.resultsCollectionId, resultId);
+  const { data: result, isLoading: resultLoading } = useDoc<Result>(appwriteConfig.resultsCollectionId, resultId);
   
-  const examId = result?.examId;
+  const examId = result?.examId || null;
 
   const { data: questions, isLoading: questionsLoading } = useCollection<QuestionDoc>(
     appwriteConfig.questionsCollectionId,
     examId ? [Query.equal('examId', examId)] : []
   );
   
-  const { data: exam, isLoading: examLoading } = useDoc<ExamDoc>(appwriteConfig.examsCollectionId, examId);
+  const { data: exam, isLoading: examLoading } = useDoc<Exam>(appwriteConfig.examsCollectionId, examId);
   
-  const { data: allResults, isLoading: allResultsLoading } = useCollection<ResultDoc>(
+  const { data: allResults, isLoading: allResultsLoading } = useCollection<Result>(
       appwriteConfig.resultsCollectionId, 
       examId ? [Query.equal('examId', examId)] : []
   );

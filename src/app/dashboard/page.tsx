@@ -3,53 +3,33 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { useUser, useDatabases, useDoc, useCollection, appwriteConfig } from '@/appwrite';
+import { useUser, useDatabases, useGlobalData, appwriteConfig } from '@/appwrite';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Calendar } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Models } from 'appwrite';
-
-interface UserData extends Models.Document {
-    enrolledCourses: string[];
-    name: string;
-    email: string;
-    phone: string;
-    institution?: string;
-}
-
-interface Course extends Models.Document {
-    title: string;
-    image: string;
-    slug: string;
-    startDate?: string;
-    imageHint?: string;
-}
+import { Course, UserData } from '@/types';
 
 export default function DashboardCoursesPage() {
-  const { user, isLoading: isUserLoading } = useUser();
+  const { user, profile: globalProfile, isLoading: isUserLoading, refreshUser } = useUser();
+  const { courses: allCourses, isLoading: isGlobalLoading } = useGlobalData();
   const router = useRouter();
   const databases = useDatabases();
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const { data: userData, isLoading: isDataLoading } = useDoc<UserData>(
-    appwriteConfig.usersCollectionId, 
-    user?.$id || null
-  );
-
-  const { data: allCourses, isLoading: isCoursesLoading } = useCollection<Course>(
-      appwriteConfig.coursesCollectionId
-  );
+  const userData = globalProfile as UserData | null;
+  const isCoursesLoading = isGlobalLoading;
+  const isDataLoading = isUserLoading;
 
   // Handle auto-enrollment from URL query parameter
   useEffect(() => {
     const enrollCourse = async () => {
       const courseToEnroll = searchParams.get('course');
       // Exit if no course in URL, or if user/data is still loading
-      if (!courseToEnroll || !user || !databases || isDataLoading) {
+      if (!courseToEnroll || !user || !databases || isUserLoading) {
         return;
       }
 
@@ -95,6 +75,10 @@ export default function DashboardCoursesPage() {
             }
           );
         }
+        
+        // Refresh the global user state after update
+        await refreshUser();
+
         toast({
           title: "Success",
           description: `Enrolled in ${decodedCourseName} successfully!`,
@@ -115,7 +99,7 @@ export default function DashboardCoursesPage() {
     if (!isUserLoading) {
         enrollCourse();
     }
-  }, [user, isUserLoading, isDataLoading, userData, searchParams, databases, router, toast]);
+  }, [user, isUserLoading, userData, searchParams, databases, router, toast, refreshUser]);
 
   if (isUserLoading || isDataLoading || isCoursesLoading) {
     return (
@@ -151,7 +135,7 @@ export default function DashboardCoursesPage() {
       
       {enrolledCourses.length > 0 ? (
         <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
-          {enrolledCourses.map((course) => (
+          {enrolledCourses.map((course: Course) => (
             <Card key={course.$id} className="overflow-hidden shadow-lg transition-all hover:shadow-xl bg-white rounded-2xl flex flex-col md:flex-row">
               <div className="md:w-1/3 flex-shrink-0">
                 <Image

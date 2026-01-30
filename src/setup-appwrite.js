@@ -252,7 +252,8 @@ async function setup() {
     await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'image', 1000, true);
     await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'imageHint', 255, false);
     await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'boolean', 'disabled', false, true);
-    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'categoryId', 100, true);
+    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'categoryId', 100, false);
+    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'createdAt', 30, false);
 
     // 7. Create Routines Collection
     await getOrCreateCollection(ROUTINES_COLLECTION_ID, 'Routines', [
@@ -279,7 +280,7 @@ async function setup() {
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'integer', 'correctAnswers', null, true);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'integer', 'wrongAnswers', null, true);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'submittedAt', 30, true);
-    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'answersJSON', 5000, false);
+    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'answersJSON', 50000, false);
 
     // 8.5 Create Calendar Collection
     await getOrCreateCollection(CALENDAR_COLLECTION_ID, 'Calendar', [

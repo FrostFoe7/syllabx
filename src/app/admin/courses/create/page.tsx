@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/form';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Course } from '@/types';
 
 const courseSchema = z.object({
   title: z.string().min(3, 'Course title must be at least 3 characters'),
@@ -32,6 +33,7 @@ const courseSchema = z.object({
   features: z.string().optional(),
   slug: z.string().optional(),
   startDate: z.string().optional(),
+  categoryId: z.string().min(1, 'Category ID is required'),
 });
 
 type CourseFormValues = z.infer<typeof courseSchema>;
@@ -52,6 +54,7 @@ export default function CreateCoursePage() {
       features: '',
       slug: '',
       startDate: '',
+      categoryId: 'hsc-26',
     },
   });
 
@@ -68,6 +71,7 @@ export default function CreateCoursePage() {
         startDate: data.startDate || new Date().toISOString(),
         disabled: false,
         createdAt: new Date().toISOString(),
+        categoryId: data.categoryId,
       };
 
       await databases.createDocument(
@@ -183,6 +187,20 @@ export default function CreateCoursePage() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="categoryId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category ID</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., hsc-26 or qb-course" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

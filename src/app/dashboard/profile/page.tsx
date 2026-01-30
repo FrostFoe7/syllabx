@@ -44,17 +44,15 @@ interface UserData extends Models.Document {
 }
 
 export default function ProfilePage() {
-  const { user, logout, refreshUser } = useUser();
+  const { user, profile: globalProfile, isLoading: isUserLoading, logout, refreshUser } = useUser();
   const account = useAccount();
   const databases = useDatabases();
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { data: userData, isLoading: isDataLoading } = useDoc<UserData>(
-    appwriteConfig.usersCollectionId, 
-    user?.$id || null
-  );
+  const userData = globalProfile as UserData | null;
+  const isDataLoading = isUserLoading;
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),

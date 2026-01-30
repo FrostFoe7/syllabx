@@ -7,16 +7,7 @@ import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CheckCircle2, Plus, Pencil } from 'lucide-react';
 import Link from 'next/link';
-
-import { Models } from 'appwrite';
-
-interface Course extends Models.Document {
-    title: string;
-    image: string;
-    price: string;
-    description: string;
-    disabled?: boolean;
-}
+import { Course } from '@/types';
 
 export default function AdminCoursesPage() {
   const { data: dbCourses, isLoading } = useCollection<Course>(appwriteConfig.coursesCollectionId);

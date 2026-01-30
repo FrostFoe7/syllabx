@@ -6,23 +6,11 @@ import { Models } from 'appwrite';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { useUser, useDoc, useCollection, appwriteConfig } from '@/appwrite';
+import { useUser, useCollection, appwriteConfig } from '@/appwrite';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Calendar, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
-
-interface Exam extends Models.Document {
-    title: string;
-    courseId: string;
-    courseName?: string;
-    startTime: string; 
-    endTime: string; 
-    duration: number;
-}
-
-interface UserData extends Models.Document {
-    enrolledCourses: string[];
-}
+import { Exam, UserData } from '@/types';
 
 function ExamCard({ exam }: { exam: Exam }) {
     const router = useRouter();
@@ -125,11 +113,8 @@ function ExamList({ exams, status }: { exams: Exam[] | null, status: 'loading' |
 }
 
 export default function ExamsPage() {
-    const { user, isLoading: isUserLoading } = useUser();
-    const { data: userData, isLoading: isDataLoading } = useDoc<UserData>(
-        appwriteConfig.usersCollectionId,
-        user?.$id || null
-    );
+    const { user, profile: globalProfile, isLoading: isUserLoading } = useUser();
+    const userData = globalProfile as UserData | null;
 
     const { data: allExams, isLoading: examsLoading } = useCollection<Exam>(
         appwriteConfig.examsCollectionId
@@ -166,7 +151,7 @@ export default function ExamsPage() {
         return { active, past, upcoming };
     }, [filteredExams]);
 
-    const isLoading = isUserLoading || isDataLoading || examsLoading;
+    const isLoading = isUserLoading || examsLoading;
 
     return (
     <div className="space-y-6">

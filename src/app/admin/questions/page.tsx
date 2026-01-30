@@ -30,12 +30,12 @@ import {
 import { ID, Query } from 'appwrite';
 import { useDatabases, useCollection, appwriteConfig } from '@/appwrite';
 import { ExamFormSchema, ExamFormValues } from './schema';
-import { Trash2, AlertCircle, Plus, FileJson, LayoutList } from 'lucide-react';
+import { Trash2, AlertCircle, Plus, FileJson, LayoutList, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Models } from 'appwrite';
+import { Course, Exam, Question } from '@/types';
 
 const jsonFormatPlaceholder = `[
   {
@@ -51,17 +51,6 @@ interface QuestionInput {
     options: string[];
     answer: string;
     explanation?: string;
-}
-
-interface Course extends Models.Document {
-    title: string;
-}
-
-interface Exam extends Models.Document {
-    title: string;
-    courseId: string;
-    courseName?: string;
-    totalQuestions: number;
 }
 
 export default function AdminQuestionsPage() {
@@ -120,6 +109,7 @@ export default function AdminQuestionsPage() {
 
   const onSubmit: SubmitHandler<ExamFormValues> = async (data) => {
     setIsLoading(true);
+    let createdExamId: string | null = null;
     try {
       let questionsData: QuestionInput[] = [];
       
@@ -134,11 +124,11 @@ export default function AdminQuestionsPage() {
           throw new Error("You must add at least one question");
       }
 
-      const examId = ID.unique();
+      createdExamId = ID.unique();
       const selectedCourse = courses?.find(c => c.$id === data.courseId);
 
       const examDataPayload = {
-        originalId: examId,
+        originalId: createdExamId,
         title: data.examName,
         courseId: data.courseId,
         courseName: selectedCourse?.title || 'Unknown',
@@ -154,44 +144,47 @@ export default function AdminQuestionsPage() {
       await databases.createDocument(
         appwriteConfig.databaseId,
         appwriteConfig.examsCollectionId,
-        examId,
+        createdExamId,
         examDataPayload
       );
 
-      const questionPromises = questionsData.map(async (q) => {
-          const options = q.options || [];
-          let ansIndex = 0;
-          
-          const idx = options.indexOf(q.answer);
-          if (idx !== -1) {
-              ansIndex = idx + 1;
-          } else if (q.answer.startsWith("Option ")) {
-              const char = q.answer.split(" ")[1];
-              ansIndex = char.charCodeAt(0) - 64;
-          } else if (q.answer.length === 1 && /^[A-D]$/i.test(q.answer)) {
-              ansIndex = q.answer.toUpperCase().charCodeAt(0) - 64;
-          }
+      // Upload questions in chunks to avoid overwhelming the API
+      const chunkSize = 5;
+      for (let i = 0; i < questionsData.length; i += chunkSize) {
+          const chunk = questionsData.slice(i, i + chunkSize);
+          await Promise.all(chunk.map(async (q) => {
+            const options = q.options || [];
+            let ansIndex = 0;
+            
+            const idx = options.indexOf(q.answer);
+            if (idx !== -1) {
+                ansIndex = idx + 1;
+            } else if (q.answer.startsWith("Option ")) {
+                const char = q.answer.split(" ")[1];
+                ansIndex = char.charCodeAt(0) - 64;
+            } else if (q.answer.length === 1 && /^[A-D]$/i.test(q.answer)) {
+                ansIndex = q.answer.toUpperCase().charCodeAt(0) - 64;
+            }
 
-          if (ansIndex < 1 || ansIndex > 4) ansIndex = 1;
+            if (ansIndex < 1 || ansIndex > 4) ansIndex = 1;
 
-          return databases.createDocument(
-              appwriteConfig.databaseId,
-              appwriteConfig.questionsCollectionId,
-              ID.unique(),
-              {
-                  examId: examId,
-                  q: q.question,
-                  a1: options[0] || "",
-                  a2: options[1] || "",
-                  a3: options[2] || "",
-                  a4: options[3] || "",
-                  ans: ansIndex,
-                  exp: q.explanation || ""
-              }
-          );
-      });
-
-      await Promise.all(questionPromises);
+            return databases.createDocument(
+                appwriteConfig.databaseId,
+                appwriteConfig.questionsCollectionId,
+                ID.unique(),
+                {
+                    examId: createdExamId,
+                    q: q.question,
+                    a1: options[0] || "",
+                    a2: options[1] || "",
+                    a3: options[2] || "",
+                    a4: options[3] || "",
+                    ans: ansIndex,
+                    exp: q.explanation || ""
+                }
+            );
+          }));
+      }
       
       toast({
         title: 'Success!',
@@ -200,6 +193,18 @@ export default function AdminQuestionsPage() {
       form.reset();
     } catch (error) {
       const err = error as { message?: string };
+      console.error("Upload error:", err);
+
+      // Attempt cleanup if exam was created but questions failed
+      if (createdExamId) {
+          try {
+              await databases.deleteDocument(appwriteConfig.databaseId, appwriteConfig.examsCollectionId, createdExamId);
+              console.log("Cleanup: Deleted ghost exam after failure.");
+          } catch (cleanupErr) {
+              console.error("Cleanup failed:", cleanupErr);
+          }
+      }
+
       toast({
         variant: 'destructive',
         title: 'Upload Failed',

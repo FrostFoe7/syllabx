@@ -63,7 +63,7 @@ export default function ExamEnginePage() {
   const router = useRouter();
   const { toast } = useToast();
   const databases = useDatabases();
-  const { user } = useUser();
+  const { user, profile: globalProfile } = useUser();
 
   const [selectedAnswers, setSelectedAnswers] = React.useState<Record<string, number>>({});
   const answersRef = React.useRef(selectedAnswers);
@@ -80,7 +80,8 @@ export default function ExamEnginePage() {
     appwriteConfig.questionsCollectionId,
     [Query.equal('examId', examId)]
   );
-  const { data: userData } = useDoc<UserData>(appwriteConfig.usersCollectionId, user?.$id || null);
+  
+  const userData = globalProfile as UserData | null;
 
   const isEnrolled = React.useMemo(() => {
       if (!userData || !exam) return true;
@@ -281,7 +282,7 @@ export default function ExamEnginePage() {
                     <Card 
                         key={question.$id} 
                         className="shadow-xl border-none"
-                        ref={el => questionRefs.current[index] = el}
+                        ref={(el) => { questionRefs.current[index] = el; }}
                         data-index={index}
                     >
                     <CardContent className="pt-8">

@@ -2,14 +2,15 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Users, BookOpen, BarChart3 } from 'lucide-react';
-import { useUser, useCollection, appwriteConfig } from '@/appwrite';
+import { useUser, useCollection, appwriteConfig, useGlobalData } from '@/appwrite';
 import { Skeleton } from '@/components/ui/skeleton';
+import { UserData, Exam, Result } from '@/types';
 
 export default function AdminPage() {
   const { user } = useUser();
-  const { data: students, isLoading: loadingStudents } = useCollection(appwriteConfig.usersCollectionId);
-  const { data: exams, isLoading: loadingExams } = useCollection(appwriteConfig.examsCollectionId);
-  const { data: results, isLoading: loadingResults } = useCollection(appwriteConfig.resultsCollectionId);
+  const { exams, isLoading: loadingExams } = useGlobalData();
+  const { data: students, isLoading: loadingStudents } = useCollection<UserData>(appwriteConfig.usersCollectionId);
+  const { data: results, isLoading: loadingResults } = useCollection<Result>(appwriteConfig.resultsCollectionId);
 
   const stats = [
     { title: 'মোট ছাত্র', value: students?.length || 0, icon: Users, color: 'text-blue-600', loading: loadingStudents },

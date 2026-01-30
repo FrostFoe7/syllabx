@@ -5,10 +5,10 @@ import Image from 'next/image';
 import { UserRound, BookOpen, Calendar, Info, Send, Menu, BookCopy, Home as HomeIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { useUser, useCollection, appwriteConfig } from '@/appwrite';
+import { useUser, useGlobalData } from '@/appwrite';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Models } from 'appwrite';
+import { Category, Course } from '@/types';
 
 const heroData = {
   title: 'তোমার <span class="text-accent">সেরা প্রস্তুতির</span> শুরু হোক এখানে থেকেই',
@@ -25,8 +25,7 @@ const actionButtonsData = [
 export default function Home() {
   const [showMenu, setShowMenu] = useState(false);
   const { user, isAdmin } = useUser();
-  const { data: categories, isLoading: catsLoading } = useCollection<{ name: string; slug: string } & Models.Document>(appwriteConfig.categoriesCollectionId);
-  const { data: allCoursesData, isLoading: coursesLoading } = useCollection<{ title: string; slug: string; image: string; price: string; disabled?: boolean; categoryId: string; imageHint?: string } & Models.Document>(appwriteConfig.coursesCollectionId);
+  const { categories, courses: allCoursesData, isLoading: globalLoading } = useGlobalData();
   
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [year] = useState(() => new Date().getFullYear());
@@ -104,7 +103,9 @@ export default function Home() {
           <div className="container mx-auto px-6 pt-16 pb-8">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="text-center md:text-left">
-                <h1 className="text-4xl lg:text-6xl font-black mb-6 leading-tight font-tiro-bangla" dangerouslySetInnerHTML={{ __html: heroData.title }} />
+                <h1 className="text-4xl lg:text-6xl font-black mb-6 leading-tight font-tiro-bangla">
+                  তোমার <span className="text-accent">সেরা প্রস্তুতির</span> শুরু হোক এখানে থেকেই
+                </h1>
                 <p className="text-xl mb-10 text-gray-600 leading-relaxed font-tiro-bangla">{heroData.subtitle}</p>
                 <div className="flex justify-center md:justify-start gap-2">
                   {actionButtonsData.map(button => (
@@ -133,14 +134,14 @@ export default function Home() {
 
         {/* Courses Section */}
         <section id="courses-section" className="pt-8 pb-20 px-[8%] text-center">
-            {catsLoading ? (
+            {globalLoading ? (
                 <div className="flex justify-center gap-4 mb-10">
                     <Skeleton className="h-10 w-32" />
                     <Skeleton className="h-10 w-32" />
                 </div>
             ) : (
                 <div className="bg-gray-200 p-2 rounded-xl inline-flex mb-10">
-                    {categories?.map(tab => (
+                    {categories?.map((tab: Category) => (
                         <button key={tab.slug} onClick={() => setActiveTab(tab.slug)} className={cn("px-6 py-2 border-none bg-transparent cursor-pointer text-base font-semibold rounded-lg text-gray-600 transition-all font-montserrat", currentTab === tab.slug && "bg-white text-accent shadow-md")}>
                             {tab.name}
                         </button>
@@ -148,7 +149,7 @@ export default function Home() {
                 </div>
             )}
 
-            {coursesLoading ? (
+            {globalLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     <Skeleton className="h-[350px] w-full rounded-2xl" />
                     <Skeleton className="h-[350px] w-full rounded-2xl" />
@@ -156,7 +157,7 @@ export default function Home() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {allCoursesData?.filter(c => !c.disabled && c.categoryId === currentTab).map(course => (
+                    {allCoursesData?.filter((c: Course) => !c.disabled && c.categoryId === currentTab).map((course: Course) => (
                         <div key={course.slug} className="bg-white rounded-2xl overflow-hidden text-left shadow-lg transition-all duration-300 hover:shadow-2xl group">
                             <div className="relative">
                                 <Image src={course.image} alt={course.title} width={400} height={200} className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105" data-ai-hint={course.imageHint} />

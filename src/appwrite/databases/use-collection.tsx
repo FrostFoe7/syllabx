@@ -18,9 +18,11 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
       return;
     }
 
+    let mounted = true;
     let unsubscribe: (() => void) | undefined;
 
     const refetch = async () => {
+        if (!mounted) return;
         try {
             const parsedQueries = JSON.parse(queriesString) as string[];
             const result = await databases.listDocuments<T>(
@@ -28,10 +30,10 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
                 collectionId,
                 parsedQueries
             );
-            setData(result.documents);
+            if (mounted) setData(result.documents);
         } catch (e) {
             console.error('Realtime refetch failed:', e);
-            setError(e as Error);
+            if (mounted) setError(e as Error);
         }
     };
 
@@ -44,22 +46,26 @@ export const useCollection = <T extends Models.Document>(collectionId: string | 
                 collectionId,
                 parsedQueries
             );
-            setData(response.documents);
+            if (mounted) setData(response.documents);
         } catch (e) {
-            setError(e as Error);
+            if (mounted) setError(e as Error);
         } finally {
-            setIsLoading(false);
+            if (mounted) setIsLoading(false);
         }
 
-        unsubscribe = client.subscribe(
-            `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents`,
-            refetch
-        );
+        if (mounted) {
+             const sub = client.subscribe(
+                `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents`,
+                refetch
+            );
+            unsubscribe = sub;
+        }
     };
 
     initialFetchAndSubscribe();
 
     return () => {
+      mounted = false;
       if (unsubscribe) {
         unsubscribe();
       }

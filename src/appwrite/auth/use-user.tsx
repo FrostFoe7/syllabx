@@ -6,6 +6,7 @@ import { Models } from "appwrite";
 
 interface UserContextType {
   user: Models.User<Models.Preferences> | null;
+  profile: Models.Document | null;
   isAdmin: boolean;
   isLoading: boolean;
   error: Error | null;
@@ -17,6 +18,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
+  const [profile, setProfile] = useState<Models.Document | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -26,6 +28,19 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const currentUser = await account.get();
       setUser(currentUser);
       
+      // Fetch user profile from database
+      try {
+        const userDoc = await databases.getDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.usersCollectionId,
+            currentUser.$id
+        );
+        setProfile(userDoc);
+      } catch (profileErr) {
+        console.error("Error fetching user profile:", profileErr);
+        setProfile(null);
+      }
+
       // Also check admin status globally
       try {
         const adminDoc = await databases.getDocument(
@@ -43,6 +58,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const appwriteErr = err as { code?: number; message?: string };
       if (appwriteErr.code === 401) {
         setUser(null);
+        setProfile(null);
         setIsAdmin(false);
       } else {
         setError(err as Error);
@@ -61,6 +77,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     try {
       await account.deleteSession("current");
       setUser(null);
+      setProfile(null);
       setIsAdmin(false);
     } catch (err) {
       console.error("Logout error:", err);
@@ -75,7 +92,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <UserContext.Provider value={{ user, isAdmin, isLoading, error, refreshUser, logout }}>
+    <UserContext.Provider value={{ user, profile, isAdmin, isLoading, error, refreshUser, logout }}>
       {children}
     </UserContext.Provider>
   );

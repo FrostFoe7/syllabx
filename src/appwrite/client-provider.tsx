@@ -2,6 +2,7 @@
 
 import { AppwriteProvider } from "./provider";
 import { UserProvider } from "./auth/use-user";
+import { GlobalDataProvider } from "./data-provider";
 
 export function AppwriteClientProvider({
   children,
@@ -11,7 +12,9 @@ export function AppwriteClientProvider({
   return (
     <AppwriteProvider>
       <UserProvider>
-        {children}
+        <GlobalDataProvider>
+          {children}
+        </GlobalDataProvider>
       </UserProvider>
     </AppwriteProvider>
   );

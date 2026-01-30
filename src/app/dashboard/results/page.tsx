@@ -3,24 +3,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, ChevronRight, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { useUser, useCollection, appwriteConfig } from "@/appwrite";
-import { Query, Models } from "appwrite";
+import { Query } from "appwrite";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { format } from "date-fns";
-
-interface ResultDoc extends Models.Document {
-    examTitle: string;
-    courseId: string;
-    marks: number;
-    totalQuestions: number;
-    correctAnswers: number;
-    wrongAnswers: number;
-    submittedAt: string;
-}
+import { Result } from "@/types";
 
 export default function ResultsPage() {
   const { user, isLoading: userLoading } = useUser();
-  const { data: results, isLoading: resultsLoading } = useCollection<ResultDoc>(
+  const { data: results, isLoading: resultsLoading } = useCollection<Result>(
     appwriteConfig.resultsCollectionId,
     [Query.equal('userId', user?.$id || ''), Query.orderDesc('submittedAt')]
   );

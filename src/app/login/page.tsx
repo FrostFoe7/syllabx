@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const formSchema = z.object({
-  name: z.string().min(2, 'নাম কমপক্ষে ২ অক্ষরের হতে হবে'),
+  name: z.string().optional(),
   phone: z.string().regex(/^01\d{9}$/, 'সঠিক বাংলাদেশি মোবাইল নম্বর প্রদান করুন (যেমন: 017xxxxxxxx)'),
   password: z.string().min(8, 'পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে'),
 });
@@ -32,9 +32,21 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const { refreshUser } = useUser();
+  const { user, isAdmin, isLoading: isUserLoading, refreshUser } = useUser();
   const account = useAccount();
   const databases = useDatabases();
+
+  // Redirect if already logged in
+  useEffect(() => {
+      if (!isUserLoading && user) {
+          if (isAdmin) router.push('/admin/dashboard');
+          else {
+              const course = searchParams.get('course');
+              const redirectUrl = course ? `/dashboard?course=${encodeURIComponent(course)}` : '/dashboard';
+              router.push(redirectUrl);
+          }
+      }
+  }, [user, isAdmin, isUserLoading, router, searchParams]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -42,8 +54,14 @@ function LoginForm() {
   });
 
   const handleAuth: SubmitHandler<FormValues> = async (data) => {
-    setIsLoading(true);
     const { phone, password, name } = data;
+
+    if (!isLogin && (!name || name.length < 2)) {
+        form.setError('name', { message: 'নাম কমপক্ষে ২ অক্ষরের হতে হবে' });
+        return;
+    }
+
+    setIsLoading(true);
     // Ensure no whitespace
     const cleanPhone = phone.trim();
     const virtualEmail = `user_${cleanPhone}@syllabx.com`;
@@ -51,26 +69,61 @@ function LoginForm() {
     try {
       if (isLogin) {
         // Handle Login
-        await account.createEmailPasswordSession(virtualEmail, password);
+        const session = await account.createEmailPasswordSession(virtualEmail, password);
+        
+        // Ensure user document exists (in case registration was interrupted)
+        try {
+            await databases.getDocument(
+                appwriteConfig.databaseId,
+                appwriteConfig.usersCollectionId,
+                session.userId
+            );
+        } catch (e) {
+            // If document doesn't exist, create it now
+            const appwriteErr = e as { code?: number };
+            if (appwriteErr.code === 404) {
+                const currentUser = await account.get();
+                await databases.createDocument(
+                    appwriteConfig.databaseId, 
+                    appwriteConfig.usersCollectionId,
+                    session.userId,
+                    {
+                        userId: session.userId,
+                        name: currentUser.name || 'Student',
+                        phone: cleanPhone,
+                        email: virtualEmail,
+                        createdAt: new Date().toISOString(),
+                        enrolledCourses: []
+                    }
+                );
+            }
+        }
+
         toast({ title: 'সফলভাবে লগইন হয়েছে' });
       } else {
         // Handle Sign Up
         const newAccount = await account.create(ID.unique(), virtualEmail, password, name);
         
         // Create user document in database
-        await databases.createDocument(
-            appwriteConfig.databaseId, 
-            appwriteConfig.usersCollectionId,
-            newAccount.$id,
-            {
-                userId: newAccount.$id,
-                name: name,
-                phone: cleanPhone,
-                email: virtualEmail,
-                createdAt: new Date().toISOString(),
-                enrolledCourses: []
-            }
-        );
+        try {
+            await databases.createDocument(
+                appwriteConfig.databaseId, 
+                appwriteConfig.usersCollectionId,
+                newAccount.$id,
+                {
+                    userId: newAccount.$id,
+                    name: name,
+                    phone: cleanPhone,
+                    email: virtualEmail,
+                    createdAt: new Date().toISOString(),
+                    enrolledCourses: []
+                }
+            );
+        } catch (dbErr) {
+            console.error("Database document creation failed:", dbErr);
+            // We don't fail the whole process here because the account IS created.
+            // The login check above will attempt to fix this.
+        }
         
         await account.createEmailPasswordSession(virtualEmail, password);
 

@@ -14,7 +14,7 @@ import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
-import { Models } from 'appwrite';
+import { Course } from '@/types';
 import { Switch } from '@/components/ui/switch';
 
 const courseSchema = z.object({
@@ -29,16 +29,6 @@ const courseSchema = z.object({
 
 type CourseValues = z.infer<typeof courseSchema>;
 
-interface CourseDoc extends Models.Document {
-    title: string;
-    price: string;
-    description: string;
-    image: string;
-    disabled: boolean;
-    startDate?: string;
-    categoryId: string;
-}
-
 export default function CourseEditPage() {
   const params = useParams();
   const id = params.id as string;
@@ -47,7 +37,7 @@ export default function CourseEditPage() {
   const databases = useDatabases();
   const [isSaving, setIsSaving] = React.useState(false);
 
-  const { data: course, isLoading } = useDoc<CourseDoc>(
+  const { data: course, isLoading } = useDoc<Course>(
     appwriteConfig.coursesCollectionId,
     id
   );
