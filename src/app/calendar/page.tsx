@@ -14,39 +14,29 @@ import { formatDistanceToNow, isAfter } from 'date-fns';
 import { bn } from 'date-fns/locale';
 
 function TimeRemaining({ dateTime }: { dateTime: string | null }) {
-    const [timeLeft, setTimeLeft] = useState<string>(() => {
-        if (!dateTime) return 'সময় নির্ধারিত হয়নি';
-        const targetDate = new Date(dateTime);
-        if (isAfter(new Date(), targetDate)) return 'পরীক্ষা শেষ';
-        return formatDistanceToNow(targetDate, { locale: bn, addSuffix: true });
-    });
+    const [timeLeft, setTimeLeft] = useState<string>('...');
 
     useEffect(() => {
         if (!dateTime) {
+            setTimeLeft('সময় নির্ধারিত হয়নি');
             return;
         }
 
         const targetDate = new Date(dateTime);
-        let interval: NodeJS.Timeout | undefined = undefined;
-
+        
         const update = () => {
             if (isAfter(new Date(), targetDate)) {
                 setTimeLeft('পরীক্ষা শেষ');
-                if (interval) {
-                    clearInterval(interval);
-                }
+                if (interval) clearInterval(interval);
             } else {
                 setTimeLeft(formatDistanceToNow(targetDate, { locale: bn, addSuffix: true }));
             }
         };
+        
+        update(); // Initial call
+        const interval = setInterval(update, 60000);
 
-        interval = setInterval(update, 60000); // Set up interval
-
-        return () => {
-            if (interval) {
-                clearInterval(interval); // Cleanup on unmount
-            }
-        };
+        return () => clearInterval(interval);
     }, [dateTime]);
 
     return <span>{timeLeft}</span>;
@@ -63,12 +53,9 @@ interface CalendarItem extends Models.Document {
 
 
 export default function CalendarPage() {
-
   const [showMenu, setShowMenu] = useState(false);
   const [year, setYear] = useState(() => new Date().getFullYear());
-
   const { user, isAdmin } = useUser();
-
   const { data: calendar, isLoading } = useCollection<CalendarItem>(appwriteConfig.calendarCollectionId);
 
   useEffect(() => {
@@ -76,83 +63,46 @@ export default function CalendarPage() {
   }, []);
 
   const navLinks = [
-
     { href: '/', text: 'হোম', icon: HomeIcon },
     { href: '/#courses-section', text: 'কোর্সসমূহ', icon: BookOpen },
     { href: '/calendar', text: 'ক্যালেন্ডার', icon: CalendarIcon },
     { href: '/about', text: 'আমাদের সম্পর্কে', icon: Info },
     ...(user ? (isAdmin ? [{ href: '/admin/dashboard', text: 'অ্যাডমিন প্যানেল', icon: UserRound }] : [{ href: '/dashboard', text: 'ড্যাশবোর্ড', icon: UserRound }]) : []),
-
   ];
 
-
-
   const heroData = {
-
     subtitle: 'সহজ ব্যাখ্যা আর আধুনিক টেকনিকের মাধ্যমে আমরা তোমার সিলেবাসের ভয় দূর করবো ইন้าআল্লাহ্‌।'
-
   };
 
-
-
   return (
-
     <div className="bg-[#FFFDF5] text-foreground antialiased">
-
       {/* Header */}
-
       <header className="bg-white/95 px-2 lg:px-6 py-3 flex justify-between items-center sticky top-0 z-20 shadow-sm">
-
         <Link href="/">
-
           <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Logo" width={56} height={56} quality={100} className="h-14 w-auto" />
-
         </Link>
-
         
-
         <div className="flex items-center gap-4">
-
           {!user ? (
-
             <Link href="/login" className="no-underline bg-black text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:bg-gray-800 transition-all shadow-md">
-
                 <UserRound size={16} className='bg-white text-black rounded-full p-0.5' />
-
                 <span className="font-montserrat">Login</span>
-
             </Link>
-
           ) : isAdmin ? (
-
             <Link href="/admin/dashboard" className="no-underline bg-accent text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:opacity-90 transition-all shadow-md">
-
                 <UserRound size={16} className='bg-white text-black rounded-full p-0.5' />
-
                 <span className="font-montserrat">Admin Panel</span>
-
             </Link>
-
           ) : (
-
             <Link href="/dashboard" className="no-underline bg-black text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:bg-gray-800 transition-all shadow-md">
-
                 <UserRound size={16} className='bg-white text-black rounded-full p-0.5' />
-
                 <span className="font-montserrat">Dashboard</span>
-
             </Link>
-
           )}
-
           
-
           <button onClick={() => setShowMenu(true)} className="md:hidden p-2 rounded-md hover:bg-gray-100">
-
             <Menu className="h-6 w-6" />
-
           </button>
-
         </div>
         <Sheet open={showMenu} onOpenChange={setShowMenu}>
             <SheetContent side="left" className="p-0 w-[280px] bg-[#FFFDF5] border-r-yellow-200">

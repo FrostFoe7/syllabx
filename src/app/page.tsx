@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { UserRound, BookOpen, Calendar, Info, Send, Menu, BookCopy, Home as HomeIcon, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,8 +30,12 @@ export default function Home() {
   const { categories, courses: allCoursesData, isLoading: globalLoading } = useGlobalData();
   
   const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [year] = useState(() => new Date().getFullYear());
+  const [year, setYear] = useState(() => new Date().getFullYear());
   const router = useRouter();
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
 
   const currentTab = activeTab || (categories && categories.length > 0 ? categories[0].slug : null);
 
@@ -115,8 +119,7 @@ export default function Home() {
           <div className="container mx-auto px-6 pt-16 pb-8">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="text-center md:text-left">
-                <h1 className="text-4xl lg:text-6xl font-black mb-6 leading-tight font-tiro-bangla">
-                  তোমার <span className="text-accent">সেরা প্রস্তুতির</span> শুরু হোক এখানে থেকেই
+                <h1 className="text-4xl lg:text-6xl font-black mb-6 leading-tight font-tiro-bangla" dangerouslySetInnerHTML={{ __html: heroData.title }}>
                 </h1>
                 <p className="text-xl mb-10 text-gray-600 leading-relaxed font-tiro-bangla">{heroData.subtitle}</p>
                 <div className="flex justify-center md:justify-start gap-2">
@@ -194,7 +197,7 @@ export default function Home() {
                                   <Separator className="my-4" />
                                   
                                   <div className="flex justify-between items-center">
-                                      <p className="text-2xl font-black text-green-600">{course.price}</p>
+                                      <p className="text-xl font-black text-green-600">{course.price}</p>
                                       <div className="flex items-center gap-2">
                                           <Link href={`/courses/${course.slug}`} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'font-tiro-bangla')}>
                                           বিস্তারিত
@@ -202,9 +205,9 @@ export default function Home() {
                                           <button
                                               onClick={() => executeRedirect(course)}
                                               disabled={course.disabled}
-                                              className={cn(buttonVariants({ size: 'sm' }), 'bg-green-600 hover:bg-green-700 text-white font-tiro-bangla')}
+                                              className={cn(buttonVariants({ size: 'sm' }), 'bg-primary hover:bg-yellow-400 text-black font-montserrat font-bold')}
                                           >
-                                              ভর্তি হন
+                                              Enroll Now
                                           </button>
                                       </div>
                                   </div>
