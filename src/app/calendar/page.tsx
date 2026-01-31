@@ -65,24 +65,22 @@ interface CalendarItem extends Models.Document {
 export default function CalendarPage() {
 
   const [showMenu, setShowMenu] = useState(false);
-  const [year] = useState(() => new Date().getFullYear());
+  const [year, setYear] = useState(() => new Date().getFullYear());
 
   const { user, isAdmin } = useUser();
 
   const { data: calendar, isLoading } = useCollection<CalendarItem>(appwriteConfig.calendarCollectionId);
 
-
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
 
   const navLinks = [
 
     { href: '/', text: 'হোম', icon: HomeIcon },
-
     { href: '/#courses-section', text: 'কোর্সসমূহ', icon: BookOpen },
-
     { href: '/calendar', text: 'ক্যালেন্ডার', icon: CalendarIcon },
-
     { href: '/about', text: 'আমাদের সম্পর্কে', icon: Info },
-
     ...(user ? (isAdmin ? [{ href: '/admin/dashboard', text: 'অ্যাডমিন প্যানেল', icon: UserRound }] : [{ href: '/dashboard', text: 'ড্যাশবোর্ড', icon: UserRound }]) : []),
 
   ];
@@ -194,53 +192,80 @@ export default function CalendarPage() {
         </div>
         
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-yellow-100">
-            <Table>
-                <TableHeader className="bg-yellow-50/50">
-                    <TableRow className="border-b border-yellow-200">
-                        <TableHead className="w-[40%] py-4 px-6 font-tiro-bangla text-base text-accent">বিষয়</TableHead>
-                        <TableHead className="w-[30%] py-4 px-6 font-tiro-bangla text-base text-accent">তারিখ ও সময়</TableHead>
-                        <TableHead className="w-[30%] py-4 px-6 text-right font-tiro-bangla text-base text-accent">সময় বাকি</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                     {isLoading ? (
-                         Array.from({ length: 3 }).map((_, i) => (
-                            <TableRow key={i}>
-                                <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                                <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                                <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                            </TableRow>
-                         ))
-                     ) : calendar && calendar.length > 0 ? (
-                         calendar.map((item) => (
-                            <TableRow key={item.$id}>
-                                <TableCell className="py-4 px-6 font-tiro-bangla font-bold">{item.subject || item.topic}</TableCell>
-                                <TableCell className="py-4 px-6 font-tiro-bangla">
-                                    <div className="flex flex-col">
-                                        <span>{item.date}</span>
-                                        <span className="text-xs text-gray-500">{item.time}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell className="py-4 px-6 text-right font-tiro-bangla text-gray-600">
-                                    <TimeRemaining dateTime={item.examDateTime || null} />
-                                </TableCell>
-                            </TableRow>
-                         ))
-                     ) : (
-                        <TableRow>
-                            <TableCell colSpan={3} className="py-16 text-center">
-                                <div className="flex flex-col items-center justify-center gap-4">
-                                    <Lock className="w-12 h-12 text-gray-300" />
-                                    <h3 className="text-lg font-bold font-tiro-bangla text-gray-500">রুটিন এখনো প্রকাশিত হয়নি</h3>
-                                    <p className="text-muted-foreground font-tiro-bangla">বোর্ড থেকে চূড়ান্ত রুটিন প্রকাশিত হওয়ার সাথে সাথেই এখানে ক্যালেন্ডার আপডেট করা হবে।</p>
-                                </div>
-                            </TableCell>
+            {isLoading ? (
+                 <Table>
+                    <TableHeader className="bg-yellow-50/50">
+                        <TableRow className="border-b border-yellow-200">
+                            <TableHead className="w-[40%] py-4 px-6 font-tiro-bangla text-base text-accent">বিষয়</TableHead>
+                            <TableHead className="w-[30%] py-4 px-6 font-tiro-bangla text-base text-accent">তারিখ ও সময়</TableHead>
+                            <TableHead className="w-[30%] py-4 px-6 text-right font-tiro-bangla text-base text-accent">সময় বাকি</TableHead>
                         </TableRow>
-                     )}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                           <TableRow key={i}>
+                               <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                               <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                               <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                           </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            ) : calendar && calendar.length > 0 ? (
+                <Table>
+                    <TableHeader className="bg-yellow-50/50">
+                        <TableRow className="border-b border-yellow-200">
+                            <TableHead className="w-[40%] py-4 px-6 font-tiro-bangla text-base text-accent">বিষয়</TableHead>
+                            <TableHead className="w-[30%] py-4 px-6 font-tiro-bangla text-base text-accent">তারিখ ও সময়</TableHead>
+                            <TableHead className="w-[30%] py-4 px-6 text-right font-tiro-bangla text-base text-accent">সময় বাকি</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {calendar.map((item) => (
+                           <TableRow key={item.$id}>
+                               <TableCell className="py-4 px-6 font-tiro-bangla font-bold">{item.subject || item.topic}</TableCell>
+                               <TableCell className="py-4 px-6 font-tiro-bangla">
+                                   <div className="flex flex-col">
+                                       <span>{item.date}</span>
+                                       <span className="text-xs text-gray-500">{item.time}</span>
+                                   </div>
+                               </TableCell>
+                               <TableCell className="py-4 px-6 text-right font-tiro-bangla text-gray-600">
+                                   <TimeRemaining dateTime={item.examDateTime || null} />
+                               </TableCell>
+                           </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            ) : (
+                <div className="relative">
+                    <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-4 p-8 text-center">
+                        <Lock className="w-16 h-16 text-yellow-400 drop-shadow-lg" />
+                        <h3 className="text-xl font-bold font-tiro-bangla text-gray-700">রুটিন এখনো প্রকাশিত হয়নি</h3>
+                        <p className="text-muted-foreground font-tiro-bangla max-w-sm">বোর্ড থেকে চূড়ান্ত পরীক্ষার রুটিন প্রকাশিত হওয়ার সাথে সাথেই এখানে সম্পূর্ণ ক্যালেন্ডার আপডেট করা হবে। অনুগ্রহ করে অপেক্ষা করুন।</p>
+                    </div>
+                    
+                    <Table>
+                        <TableHeader className="bg-yellow-50/50 opacity-50">
+                            <TableRow className="border-b border-yellow-200">
+                                <TableHead className="w-[40%] py-4 px-6 font-tiro-bangla text-base text-accent">বিষয়</TableHead>
+                                <TableHead className="w-[30%] py-4 px-6 font-tiro-bangla text-base text-accent">তারিখ ও সময়</TableHead>
+                                <TableHead className="w-[30%] py-4 px-6 text-right font-tiro-bangla text-base text-accent">সময় বাকি</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody className="opacity-50">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                               <TableRow key={i}>
+                                   <TableCell><Skeleton className="h-6 w-full bg-gray-200" /></TableCell>
+                                   <TableCell><Skeleton className="h-6 w-full bg-gray-200" /></TableCell>
+                                   <TableCell><Skeleton className="h-6 w-full bg-gray-200" /></TableCell>
+                               </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
         </div>
-
       </main>
 
       {/* Footer */}
@@ -281,9 +306,3 @@ export default function CalendarPage() {
     </div>
   );
 }
-
-    
-
-
-
-    
