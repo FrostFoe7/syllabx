@@ -381,21 +381,6 @@ async function setup() {
         }
     }
 
-    // Seed Calendar
-    const calendarData = [
-        { subject: 'Bangla 1st Paper', date: 'April 1, 2026', time: '10:00 AM', examDateTime: new Date('2026-04-01T10:00:00Z').toISOString() },
-        { subject: 'Bangla 2nd Paper', date: 'April 3, 2026', time: '10:00 AM', examDateTime: new Date('2026-04-03T10:00:00Z').toISOString() },
-        { subject: 'English 1st Paper', date: 'April 6, 2026', time: '10:00 AM', examDateTime: new Date('2026-04-06T10:00:00Z').toISOString() },
-    ];
-
-    for (const [index, item] of calendarData.entries()) {
-        try {
-            await databases.createDocument(DATABASE_ID, CALENDAR_COLLECTION_ID, `cal_${index}`, item);
-        } catch (e) {
-            if (e.code !== 409) console.error(`Error seeding calendar: ${e.message}`);
-        }
-    }
-
     // Seed Routine for Physics
     const physicsRoutine = [
         { date: '১ ফেব্রুয়ারি, ২০২৬', topic: 'তাপগতিবিদ্যা' },
