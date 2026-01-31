@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { UserRound, BookOpen, Calendar, Info, Send, Menu, BookCopy, Home as HomeIcon } from 'lucide-react';
+import { UserRound, BookOpen, Calendar, Info, Send, Menu, BookCopy, Home as HomeIcon, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { useUser, useGlobalData } from '@/appwrite';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Category, Course } from '@/types';
+import { Separator } from '@/components/ui/separator';
+import { useRouter } from 'next/navigation';
+import { buttonVariants } from '@/components/ui/button';
 
 const heroData = {
   title: 'তোমার <span class="text-accent">সেরা প্রস্তুতির</span> শুরু হোক এখানে থেকেই',
@@ -21,7 +24,6 @@ const actionButtonsData = [
   { url: "#courses-section", title: "প্রশ্নব্যাংক", icon: BookCopy },
 ];
 
-
 export default function Home() {
   const [showMenu, setShowMenu] = useState(false);
   const { user, isAdmin } = useUser();
@@ -29,6 +31,7 @@ export default function Home() {
   
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [year] = useState(() => new Date().getFullYear());
+  const router = useRouter();
 
   const currentTab = activeTab || (categories && categories.length > 0 ? categories[0].slug : null);
 
@@ -39,6 +42,15 @@ export default function Home() {
     { href: '/about', text: 'আমাদের সম্পর্কে', icon: Info },
     ...(user ? (isAdmin ? [{ href: '/admin/dashboard', text: 'অ্যাডমিন প্যানেল', icon: UserRound }] : [{ href: '/dashboard', text: 'ড্যাশবোর্ড', icon: UserRound }]) : []),
   ];
+
+  const executeRedirect = (course: Course) => {
+    const encodedCourseName = encodeURIComponent(course.title || '');
+    if (user) {
+        router.push(`/dashboard?course=${encodedCourseName}`);
+    } else {
+        router.push(`/login?course=${encodedCourseName}`);
+    }
+  };
   
   return (
     <div className="bg-background text-foreground">
@@ -151,38 +163,52 @@ export default function Home() {
 
             {globalLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <Skeleton className="h-[350px] w-full rounded-2xl" />
-                    <Skeleton className="h-[350px] w-full rounded-2xl" />
-                    <Skeleton className="h-[350px] w-full rounded-2xl" />
+                    <Skeleton className="h-[450px] w-full rounded-2xl" />
+                    <Skeleton className="h-[450px] w-full rounded-2xl" />
+                    <Skeleton className="h-[450px] w-full rounded-2xl" />
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {allCoursesData?.filter((c: Course) => !c.disabled && c.categoryId === currentTab).map((course: Course) => (
-                        <div key={course.slug} className="bg-white rounded-2xl overflow-hidden text-left shadow-lg transition-all duration-300 hover:shadow-2xl group">
+                        <div key={course.slug} className="flex flex-col bg-white rounded-2xl overflow-hidden text-left shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-gray-100">
                             <div className="relative">
-                                <Image src={course.image} alt={course.title} width={400} height={200} className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105" data-ai-hint={course.imageHint} />
-                                <div className={cn(
-                                    "absolute top-4 right-4 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md",
-                                    course.price === 'EXPIRED' ? 'bg-destructive' : 'bg-green-600'
-                                )}>
-                                    {course.price}
-                                </div>
+                                <Image src={course.image} alt={course.title} width={400} height={225} className="w-full h-auto object-cover" data-ai-hint={course.imageHint} />
+                                <div className="absolute top-3 left-3 bg-black/70 text-white text-[10px] font-bold uppercase px-2 py-1 rounded">ভর্তি চলছে...</div>
+                                <div className="absolute top-3 right-3 bg-black/70 text-white text-[10px] font-bold uppercase px-2 py-1 rounded">{course.categoryId}</div>
                             </div>
-                            <div className="p-6 flex flex-col h-[calc(100%-12rem)]">
-                                <h3 className="text-xl font-bold font-tiro-bangla mb-4 flex-grow">{course.title}</h3>
-                                <Link
-                                    href={`/courses/${course.slug}`}
-                                    className={cn(
-                                        "inline-block text-center bg-black text-white px-6 py-3 rounded-lg no-underline font-bold w-full transition-all duration-300 font-tiro-bangla mt-auto", 
-                                        course.disabled 
-                                            ? "bg-gray-400 cursor-not-allowed" 
-                                            : "group-hover:bg-primary group-hover:text-black"
-                                    )}
-                                    aria-disabled={course.disabled}
-                                    onClick={(e) => { if (course.disabled) e.preventDefault(); }}
-                                >
-                                    কোর্সটি দেখুন
-                                </Link>
+                            
+                            <div className="p-5 flex flex-col flex-grow">
+                                <h3 className="text-lg font-bold font-tiro-bangla mb-1">{course.title}</h3>
+                                <p className="text-sm text-gray-600 font-tiro-bangla mb-4 h-10 line-clamp-2">{course.description}</p>
+                                
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4">
+                                    {(course.features || []).slice(0, 4).map((feature, index) => (
+                                        <div key={index} className="flex items-center gap-2">
+                                            <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                                            <span className="text-xs text-gray-700 font-tiro-bangla">{feature}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div className="mt-auto">
+                                  <Separator className="my-4" />
+                                  
+                                  <div className="flex justify-between items-center">
+                                      <p className="text-2xl font-black text-green-600">{course.price}</p>
+                                      <div className="flex items-center gap-2">
+                                          <Link href={`/courses/${course.slug}`} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'font-tiro-bangla')}>
+                                          বিস্তারিত
+                                          </Link>
+                                          <button
+                                              onClick={() => executeRedirect(course)}
+                                              disabled={course.disabled}
+                                              className={cn(buttonVariants({ size: 'sm' }), 'bg-green-600 hover:bg-green-700 text-white font-tiro-bangla')}
+                                          >
+                                              ভর্তি হন
+                                          </button>
+                                      </div>
+                                  </div>
+                                </div>
                             </div>
                         </div>
                     ))}
