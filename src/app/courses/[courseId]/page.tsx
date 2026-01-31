@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -31,7 +31,11 @@ export default function CourseDetailPage() {
   // Header and menu state
   const [showMenu, setShowMenu] = useState(false);
   const { user, isAdmin } = useUser();
-  const [year] = useState(() => new Date().getFullYear());
+  const [year, setYear] = useState(() => new Date().getFullYear());
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },
@@ -76,7 +80,7 @@ export default function CourseDetailPage() {
       {/* Header */}
       <header className="bg-white/95 px-2 lg:px-6 py-3 flex justify-between items-center sticky top-0 z-20 shadow-sm print:hidden">
         <Link href="/">
-          <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Logo" width={60} height={60} quality={100} className="h-14 w-auto" />
+          <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Logo" width={150} height={150} quality={100} className="h-14 w-auto" />
         </Link>
         <div className="flex items-center gap-4">
           {!user ? (
@@ -282,5 +286,7 @@ export default function CourseDetailPage() {
     
 
 
+
+    
 
     

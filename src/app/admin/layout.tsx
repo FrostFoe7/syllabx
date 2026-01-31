@@ -114,8 +114,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <Image
                 src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png"
                 alt="Logo"
-                width={60}
-                height={60}
+                width={150}
+                height={150}
                 quality={100}
                 className="h-14 w-auto"
               />
@@ -182,3 +182,5 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+    
