@@ -37,18 +37,46 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         );
         setProfile(userDoc);
       } catch (profileErr) {
-        console.error("Error fetching user profile:", profileErr);
-        setProfile(null);
+        const appwriteErr = profileErr as { code?: number };
+        if (appwriteErr.code === 404) {
+          // Document not found, let's create it. This can happen if signup was interrupted.
+          try {
+            const phoneFromEmail = currentUser.email.startsWith('user_') && currentUser.email.endsWith('@syllabx.com')
+                ? currentUser.email.substring(5, currentUser.email.indexOf('@'))
+                : '';
+
+            const newUserDoc = await databases.createDocument(
+                appwriteConfig.databaseId,
+                appwriteConfig.usersCollectionId,
+                currentUser.$id,
+                {
+                    userId: currentUser.$id,
+                    name: currentUser.name,
+                    email: currentUser.email,
+                    phone: phoneFromEmail,
+                    createdAt: new Date().toISOString(),
+                    enrolledCourses: []
+                }
+            );
+            setProfile(newUserDoc);
+          } catch (creationError) {
+             // If creation also fails, we can't do much. Set profile to null.
+             setProfile(null);
+          }
+        } else {
+            // Some other error fetching profile, set profile to null
+            setProfile(null);
+        }
       }
 
       // Also check admin status globally
       try {
-        const adminDoc = await databases.getDocument(
+        await databases.getDocument(
             appwriteConfig.databaseId,
             appwriteConfig.adminsCollectionId,
             currentUser.$id
         );
-        setIsAdmin(!!adminDoc);
+        setIsAdmin(true);
       } catch {
         setIsAdmin(false);
       }
@@ -80,7 +108,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setProfile(null);
       setIsAdmin(false);
     } catch (err) {
-      console.error("Logout error:", err);
+      // Don't need to show an error on logout fail
     } finally {
       setIsLoading(false);
     }
