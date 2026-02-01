@@ -17,27 +17,30 @@ function TimeRemaining({ dateTime }: { dateTime: string | null }) {
     const [timeLeft, setTimeLeft] = useState<string>('...');
 
     useEffect(() => {
-        if (!dateTime) {
-            setTimeLeft('সময় নির্ধারিত হয়নি');
-            return;
-        }
+        if (!dateTime) return;
 
         const targetDate = new Date(dateTime);
         
         const update = () => {
             if (isAfter(new Date(), targetDate)) {
                 setTimeLeft('পরীক্ষা শেষ');
-                if (interval) clearInterval(interval);
+                return true;
             } else {
                 setTimeLeft(formatDistanceToNow(targetDate, { locale: bn, addSuffix: true }));
+                return false;
             }
         };
         
-        update(); // Initial call
-        const interval = setInterval(update, 60000);
+        if (update()) return;
+
+        const interval = setInterval(() => {
+            if (update()) clearInterval(interval);
+        }, 60000);
 
         return () => clearInterval(interval);
     }, [dateTime]);
+
+    if (!dateTime) return <span>সময় নির্ধারিত হয়নি</span>;
 
     return <span>{timeLeft}</span>;
 }
@@ -54,13 +57,9 @@ interface CalendarItem extends Models.Document {
 
 export default function CalendarPage() {
   const [showMenu, setShowMenu] = useState(false);
-  const [year, setYear] = useState(() => new Date().getFullYear());
+  const [year] = useState(() => new Date().getFullYear());
   const { user, isAdmin } = useUser();
   const { data: calendar, isLoading } = useCollection<CalendarItem>(appwriteConfig.calendarCollectionId);
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },

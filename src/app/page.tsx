@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { UserRound, BookOpen, Calendar, Info, Send, Menu, BookCopy, Home as HomeIcon, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,12 +30,8 @@ export default function Home() {
   const { categories, courses: allCoursesData, isLoading: globalLoading } = useGlobalData();
   
   const [activeTab, setActiveTab] = useState<string | null>(null);
-  const [year, setYear] = useState(() => new Date().getFullYear());
+  const [year] = useState(() => new Date().getFullYear());
   const router = useRouter();
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
 
   const currentTab = activeTab || (categories && categories.length > 0 ? categories[0].slug : null);
 

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Users, BookOpen, BarChart3 } from 'lucide-react';
 import { useUser, useCollection, appwriteConfig, useGlobalData } from '@/appwrite';
 import { Skeleton } from '@/components/ui/skeleton';
-import { UserData, Exam, Result } from '@/types';
+import { UserData, Result } from '@/types';
 
 export default function AdminPage() {
   const { user } = useUser();

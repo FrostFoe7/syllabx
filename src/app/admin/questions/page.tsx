@@ -30,12 +30,12 @@ import {
 import { ID, Query } from 'appwrite';
 import { useDatabases, useCollection, appwriteConfig } from '@/appwrite';
 import { ExamFormSchema, ExamFormValues } from './schema';
-import { Trash2, AlertCircle, Plus, FileJson, LayoutList, Loader2 } from 'lucide-react';
+import { Trash2, AlertCircle, Plus, FileJson, LayoutList } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Course, Exam, Question } from '@/types';
+import { Course, Exam } from '@/types';
 
 const jsonFormatPlaceholder = `[
   {

@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Models } from 'appwrite';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -113,7 +112,7 @@ function ExamList({ exams, status }: { exams: Exam[] | null, status: 'loading' |
 }
 
 export default function ExamsPage() {
-    const { user, profile: globalProfile, isLoading: isUserLoading } = useUser();
+    const { profile: globalProfile, isLoading: isUserLoading } = useUser();
     const userData = globalProfile as UserData | null;
 
     const { data: allExams, isLoading: examsLoading } = useCollection<Exam>(

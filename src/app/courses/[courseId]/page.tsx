@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -31,11 +31,7 @@ export default function CourseDetailPage() {
   // Header and menu state
   const [showMenu, setShowMenu] = useState(false);
   const { user, isAdmin } = useUser();
-  const [year, setYear] = useState(() => new Date().getFullYear());
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
+  const [year] = useState(() => new Date().getFullYear());
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },

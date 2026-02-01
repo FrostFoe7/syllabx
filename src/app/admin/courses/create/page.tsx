@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/form';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { Course } from '@/types';
 
 const courseSchema = z.object({
   title: z.string().min(3, 'Course title must be at least 3 characters'),

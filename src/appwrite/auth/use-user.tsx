@@ -59,7 +59,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                 }
             );
             setProfile(newUserDoc);
-          } catch (creationError) {
+          } catch {
              // If creation also fails, we can't do much. Set profile to null.
              setProfile(null);
           }
@@ -107,7 +107,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setProfile(null);
       setIsAdmin(false);
-    } catch (err) {
+    } catch {
       // Don't need to show an error on logout fail
     } finally {
       setIsLoading(false);

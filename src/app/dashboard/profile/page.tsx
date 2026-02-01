@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { LogOut, BookOpen, User } from 'lucide-react';
 
-import { useUser, useAccount, useDatabases, useDoc, appwriteConfig } from '@/appwrite';
+import { useUser, useAccount, useDatabases, appwriteConfig } from '@/appwrite';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

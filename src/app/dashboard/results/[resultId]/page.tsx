@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useDoc, useCollection, appwriteConfig } from '@/appwrite';
-import { Models, Query } from 'appwrite';
+import { Query } from 'appwrite';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, CheckCircle2, XCircle, AlertCircle, Info, Trophy } from 'lucide-react';
