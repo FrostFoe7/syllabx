@@ -1,76 +1,74 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { databases, client, appwriteConfig } from '../config';
 import { Models } from 'appwrite';
 
-export const useCollection = <T extends Models.Document>(collectionId: string | null, queries: string[] = []) => {
-  const [data, setData] = useState<T[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+export function useCollection<T extends Models.Document>(
+    collectionId: string | null, 
+    queries: string[] = []
+) {
+    const queryClient = useQueryClient();
+    // We use a query key that depends on collectionId and queries
+    const queryKey = useMemo(() => ['collection', collectionId, ...queries], [collectionId, queries]);
 
-  const queriesString = JSON.stringify(queries);
-
-  useEffect(() => {
-    if (!collectionId) {
-      setData(null);
-      setIsLoading(false);
-      return;
-    }
-
-    let mounted = true;
-    let unsubscribe: (() => void) | undefined;
-
-    const refetch = async () => {
-        if (!mounted) return;
-        try {
-            const parsedQueries = JSON.parse(queriesString) as string[];
-            const result = await databases.listDocuments<T>(
-                appwriteConfig.databaseId,
-                collectionId,
-                parsedQueries
-            );
-            if (mounted) setData(result.documents);
-        } catch (e) {
-            console.error('Realtime refetch failed:', e);
-            if (mounted) setError(e as Error);
-        }
-    };
-
-    const initialFetchAndSubscribe = async () => {
-        setIsLoading(true);
-        try {
-            const parsedQueries = JSON.parse(queriesString) as string[];
+    const { data, isLoading, isError, refetch } = useQuery({
+        queryKey,
+        queryFn: async () => {
+            if (!collectionId) return [];
             const response = await databases.listDocuments<T>(
                 appwriteConfig.databaseId,
                 collectionId,
-                parsedQueries
+                queries
             );
-            if (mounted) setData(response.documents);
-        } catch (e) {
-            if (mounted) setError(e as Error);
-        } finally {
-            if (mounted) setIsLoading(false);
-        }
+            return response.documents;
+        },
+        enabled: !!collectionId, // Only run if collectionId is provided
+    });
 
-        if (mounted) {
-             const sub = client.subscribe(
-                `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents`,
-                refetch
-            );
-            unsubscribe = sub;
-        }
+    useEffect(() => {
+        if (!collectionId) return;
+
+        const unsubscribe = client.subscribe(
+            `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents`,
+            (response) => {
+                const event = response.events[0];
+                const payload = response.payload as T;
+
+                queryClient.setQueryData<T[]>(queryKey, (oldData) => {
+                    const currentData = oldData || [];
+
+                    if (event.includes('.create')) {
+                        // Check uniqueness just in case
+                        if (currentData.some(d => d.$id === payload.$id)) return currentData;
+                        return [payload, ...currentData];
+                    }
+
+                    if (event.includes('.update')) {
+                        return currentData.map((doc) => 
+                            doc.$id === payload.$id ? payload : doc
+                        );
+                    }
+
+                    if (event.includes('.delete')) {
+                        return currentData.filter((doc) => doc.$id !== payload.$id);
+                    }
+
+                    return currentData;
+                });
+            }
+        );
+
+        return () => {
+            unsubscribe();
+        };
+    }, [collectionId, queryClient, queryKey]);
+
+    return { 
+        data: data || null, 
+        isLoading, 
+        isError: !!isError, 
+        mutate: refetch // Alias refetch as mutate to match previous API
     };
-
-    initialFetchAndSubscribe();
-
-    return () => {
-      mounted = false;
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [collectionId, queriesString]);
-
-  return { data, isLoading, error };
-};
+}

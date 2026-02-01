@@ -1,4 +1,4 @@
-import { Client, Databases, ID, Users } from 'node-appwrite';
+import { Client, Databases, ID, Users, Permission, Role } from 'node-appwrite';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -51,17 +51,28 @@ async function setupAccount(phone, password, name, isAdmin = false) {
 
         // 2. Upsert User Profile Document
         try {
-            await databases.createDocument(DATABASE_ID, USERS_COLLECTION_ID, userId, {
-                userId: userId,
-                name: name,
-                phone: phone,
-                email: email,
-                createdAt: new Date().toISOString(),
-                enrolledCourses: []
-            });
+            await databases.createDocument(
+                DATABASE_ID, 
+                USERS_COLLECTION_ID, 
+                userId, 
+                {
+                    userId: userId,
+                    name: name,
+                    phone: phone,
+                    email: email,
+                    createdAt: new Date().toISOString(),
+                    enrolledCourses: []
+                },
+                [
+                    Permission.read(Role.user(userId)),
+                    Permission.update(Role.user(userId))
+                ]
+            );
             console.log(`✅ Created user profile document`);
         } catch (e) {
             if (e.code === 409) {
+                // If exists, we might want to ensure permissions are correct, but updateDocument doesn't change permissions easily.
+                // For now, just update data.
                 await databases.updateDocument(DATABASE_ID, USERS_COLLECTION_ID, userId, {
                     name: name,
                     phone: phone,
@@ -74,17 +85,30 @@ async function setupAccount(phone, password, name, isAdmin = false) {
 
         // 3. Admin logic
         if (isAdmin) {
+            // Ensure admin document has correct permissions by recreating it if necessary
             try {
-                await databases.createDocument(DATABASE_ID, ADMINS_COLLECTION_ID, userId, {
-                    userId: userId
-                });
-                console.log(`✅ Registered as admin`);
+                await databases.deleteDocument(DATABASE_ID, ADMINS_COLLECTION_ID, userId);
+                console.log(`ℹ️ Removed existing admin doc to reset permissions`);
             } catch (e) {
-                if (e.code === 409) {
-                    console.log(`ℹ️ Already registered as admin`);
-                } else {
-                    throw e;
-                }
+                // Ignore 404 (not found)
+                if (e.code !== 404) console.warn('Warning deleting admin doc:', e.message);
+            }
+
+            try {
+                await databases.createDocument(
+                    DATABASE_ID, 
+                    ADMINS_COLLECTION_ID, 
+                    userId, 
+                    {
+                        userId: userId
+                    },
+                    [
+                        Permission.read(Role.user(userId))
+                    ]
+                );
+                console.log(`✅ Registered as admin (with permissions)`);
+            } catch (e) {
+                throw e;
             }
         }
 

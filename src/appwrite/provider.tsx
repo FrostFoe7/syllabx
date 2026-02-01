@@ -3,6 +3,8 @@
 import { createContext, useContext, ReactNode } from "react";
 import { client, account, databases, storage, appwriteConfig } from "./config";
 import { Client, Account, Databases, Storage } from 'appwrite';
+import { UserProvider } from "./auth/use-user";
+import { GlobalDataProvider } from "./data-provider";
 
 interface AppwriteContextValue {
   client: Client;
@@ -17,7 +19,11 @@ const AppwriteContext = createContext<AppwriteContextValue | null>(null);
 export const AppwriteProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AppwriteContext.Provider value={{ client, account, databases, storage, config: appwriteConfig }}>
-        {children}
+        <UserProvider>
+            <GlobalDataProvider>
+                {children}
+            </GlobalDataProvider>
+        </UserProvider>
     </AppwriteContext.Provider>
   );
 };

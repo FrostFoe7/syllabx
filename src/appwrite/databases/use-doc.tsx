@@ -1,63 +1,57 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { databases, client, appwriteConfig } from '../config';
 import { Models } from 'appwrite';
 
-export const useDoc = <T extends Models.Document>(collectionId: string | null, documentId: string | null) => {
-  const [data, setData] = useState<T | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+export function useDoc<T extends Models.Document>(collectionId: string, documentId: string) {
+    const queryClient = useQueryClient();
+    const queryKey = useMemo(() => ['document', collectionId, documentId], [collectionId, documentId]);
 
-  useEffect(() => {
-    if (!collectionId || !documentId) {
-      setData(null);
-      setIsLoading(false);
-      return;
-    }
+    const { data, isLoading, isError, refetch } = useQuery({
+        queryKey,
+        queryFn: async () => {
+            if (!documentId || !collectionId) return null;
+            return await databases.getDocument<T>(
+                appwriteConfig.databaseId,
+                collectionId,
+                documentId
+            );
+        },
+        enabled: !!documentId && !!collectionId,
+    });
 
-    let unsubscribe: (() => void) | undefined;
+    useEffect(() => {
+        if (!documentId || !collectionId) return;
 
-    const fetchDataAndSubscribe = async () => {
-        setIsLoading(true);
-        try {
-          const result = await databases.getDocument<T>(
-            appwriteConfig.databaseId,
-            collectionId,
-            documentId
-          );
-          setData(result);
-          setError(null);
-        } catch (err) {
-          if ((err as { code?: number })?.code !== 404) {
-            setError(err as Error);
-          }
-          setData(null); // Document not found
-        } finally {
-          setIsLoading(false);
-        }
-
-        // Subscribe to changes for this specific document
-        unsubscribe = client.subscribe(
+        const unsubscribe = client.subscribe(
             `databases.${appwriteConfig.databaseId}.collections.${collectionId}.documents.${documentId}`,
             (response) => {
-                if (response.events.some(e => e.endsWith('.delete'))) {
-                    setData(null);
-                } else {
-                    setData(response.payload as T);
-                }
+                const event = response.events[0];
+                const payload = response.payload as T;
+
+                queryClient.setQueryData<T>(queryKey, (oldData) => {
+                    if (event.includes('.update')) {
+                        return payload;
+                    }
+                    if (event.includes('.delete')) {
+                        return null; // or undefined
+                    }
+                    return oldData;
+                });
             }
         );
-    };
 
-    fetchDataAndSubscribe();
-
-    return () => {
-        if (unsubscribe) {
+        return () => {
             unsubscribe();
-        }
-    };
-  }, [collectionId, documentId]);
+        };
+    }, [collectionId, documentId, queryClient, queryKey]);
 
-  return { data, isLoading, error };
-};
+    return { 
+        data: data || null, 
+        isLoading, 
+        isError: !!isError, 
+        mutate: refetch 
+    };
+}

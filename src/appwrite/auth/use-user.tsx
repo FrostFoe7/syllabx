@@ -1,135 +1,135 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
-import { account, databases, appwriteConfig } from "../config";
-import { Models } from "appwrite";
+import React, { createContext, useContext, useMemo, useCallback } from 'react';
+import { Models } from 'appwrite';
+import { account, databases, appwriteConfig } from '../config';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 
-interface UserContextType {
-  user: Models.User<Models.Preferences> | null;
-  profile: Models.Document | null;
-  isAdmin: boolean;
-  isLoading: boolean;
-  error: Error | null;
-  refreshUser: () => Promise<void>;
-  logout: () => Promise<void>;
+// Define the User Profile interface matching your DB schema
+export interface UserProfile extends Models.Document {
+    userId: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    enrolledCourses?: string[];
 }
 
-const UserContext = createContext<UserContextType | undefined>(undefined);
+interface UserContextType {
+    currentAccount: Models.User<Models.Preferences> | null;
+    user: UserProfile | null;
+    isAdmin: boolean;
+    isLoading: boolean;
+    refreshUser: () => Promise<void>;
+    logout: () => Promise<void>;
+}
 
-export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
-  const [profile, setProfile] = useState<Models.Document | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+const UserContext = createContext<UserContextType>({
+    currentAccount: null,
+    user: null,
+    isAdmin: false,
+    isLoading: true,
+    refreshUser: async () => {},
+    logout: async () => {},
+});
 
-  const fetchUser = useCallback(async () => {
-    try {
-      const currentUser = await account.get();
-      setUser(currentUser);
-      
-      // Fetch user profile from database
-      try {
-        const userDoc = await databases.getDocument(
-            appwriteConfig.databaseId,
-            appwriteConfig.usersCollectionId,
-            currentUser.$id
-        );
-        setProfile(userDoc);
-      } catch (profileErr) {
-        const appwriteErr = profileErr as { code?: number };
-        if (appwriteErr.code === 404) {
-          // Document not found, let's create it. This can happen if signup was interrupted.
-          try {
-            const phoneFromEmail = currentUser.email.startsWith('user_') && currentUser.email.endsWith('@syllabx.com')
-                ? currentUser.email.substring(5, currentUser.email.indexOf('@'))
-                : '';
+export const UserProvider = ({ children }: { children: React.ReactNode }) => {
+    const queryClient = useQueryClient();
+    const router = useRouter();
 
-            const newUserDoc = await databases.createDocument(
-                appwriteConfig.databaseId,
-                appwriteConfig.usersCollectionId,
-                currentUser.$id,
-                {
-                    userId: currentUser.$id,
-                    name: currentUser.name,
-                    email: currentUser.email,
-                    phone: phoneFromEmail,
-                    createdAt: new Date().toISOString(),
-                    enrolledCourses: []
-                }
-            );
-            setProfile(newUserDoc);
-          } catch {
-             // If creation also fails, we can't do much. Set profile to null.
-             setProfile(null);
-          }
-        } else {
-            // Some other error fetching profile, set profile to null
-            setProfile(null);
-        }
-      }
+    // 1. Fetch Account
+    const {
+        data: currentAccount,
+        isLoading: isAccountLoading,
+    } = useQuery({
+        queryKey: ['account'],
+        queryFn: async () => {
+            try {
+                return await account.get();
+            } catch {
+                return null;
+            }
+        },
+        retry: false,
+    });
 
-      // Also check admin status globally
-      try {
-        await databases.getDocument(
-            appwriteConfig.databaseId,
-            appwriteConfig.adminsCollectionId,
-            currentUser.$id
-        );
-        setIsAdmin(true);
-      } catch {
-        setIsAdmin(false);
-      }
-      
-      setError(null);
-    } catch (err) {
-      const appwriteErr = err as { code?: number; message?: string };
-      if (appwriteErr.code === 401) {
-        setUser(null);
-        setProfile(null);
-        setIsAdmin(false);
-      } else {
-        setError(err as Error);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    // 2. Fetch User Profile (Dependent on Account)
+    const {
+        data: userProfile,
+        isLoading: isProfileLoading
+    } = useQuery({
+        queryKey: ['userProfile', currentAccount?.$id],
+        queryFn: async () => {
+            if (!currentAccount) return null;
+            try {
+                return await databases.getDocument<UserProfile>(
+                    appwriteConfig.databaseId,
+                    appwriteConfig.usersCollectionId,
+                    currentAccount.$id
+                );
+            } catch {
+                console.warn("User profile not found in DB, though Account exists.");
+                return null;
+            }
+        },
+        enabled: !!currentAccount,
+        retry: false,
+    });
 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+    // 3. Check Admin Status (Dependent on Account)
+    const {
+        data: isAdmin,
+        isLoading: isAdminLoading
+    } = useQuery({
+        queryKey: ['isAdmin', currentAccount?.$id],
+        queryFn: async () => {
+            if (!currentAccount) return false;
+            try {
+                await databases.getDocument(
+                    appwriteConfig.databaseId,
+                    appwriteConfig.adminsCollectionId,
+                    currentAccount.$id
+                );
+                return true;
+            } catch {
+                return false;
+            }
+        },
+        enabled: !!currentAccount,
+        retry: false,
+    });
 
-  const logout = async () => {
-    setIsLoading(true);
-    try {
-      await account.deleteSession("current");
-      setUser(null);
-      setProfile(null);
-      setIsAdmin(false);
-    } catch {
-      // Don't need to show an error on logout fail
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const refreshUser = useCallback(async () => {
+        await queryClient.invalidateQueries({ queryKey: ['account'] });
+        await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+        await queryClient.invalidateQueries({ queryKey: ['isAdmin'] });
+    }, [queryClient]);
 
-  const refreshUser = async () => {
-    setIsLoading(true);
-    await fetchUser();
-  };
+    const logout = useCallback(async () => {
+        await account.deleteSession('current');
+        queryClient.setQueryData(['account'], null);
+        queryClient.setQueryData(['userProfile'], null);
+        queryClient.setQueryData(['isAdmin'], false);
+        router.push('/login');
+    }, [queryClient, router]);
 
-  return (
-    <UserContext.Provider value={{ user, profile, isAdmin, isLoading, error, refreshUser, logout }}>
-      {children}
-    </UserContext.Provider>
-  );
+    const isLoading = isAccountLoading || (!!currentAccount && isProfileLoading) || (!!currentAccount && isAdminLoading);
+
+    const value = useMemo(() => ({
+        currentAccount: currentAccount || null,
+        user: userProfile || null,
+        isAdmin: !!isAdmin,
+        isLoading,
+        refreshUser,
+        logout
+    }), [currentAccount, userProfile, isAdmin, isLoading, refreshUser, logout]);
+
+    return (
+        <UserContext.Provider value={value}>
+            {children}
+        </UserContext.Provider>
+    );
 };
 
-export const useUser = () => {
-  const context = useContext(UserContext);
-  if (context === undefined) {
-    throw new Error("useUser must be used within a UserProvider");
-  }
-  return context;
-};
+export const useUser = () => useContext(UserContext);
+

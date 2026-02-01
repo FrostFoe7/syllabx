@@ -30,7 +30,8 @@ import {
 import { ID, Query } from 'appwrite';
 import { useDatabases, useCollection, appwriteConfig } from '@/appwrite';
 import { ExamFormSchema, ExamFormValues } from './schema';
-import { Trash2, AlertCircle, Plus, FileJson, LayoutList } from 'lucide-react';
+import { Trash2, AlertCircle, Plus, FileJson, LayoutList, Pencil } from 'lucide-react';
+import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -482,15 +483,26 @@ export default function AdminQuestionsPage() {
                                         <p className="text-[10px] text-muted-foreground uppercase font-bold">{exam.courseName || 'General'}</p>
                                         <p className="text-[10px] text-muted-foreground">{exam.totalQuestions} Questions</p>
                                     </div>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="text-destructive h-8 w-8 hover:bg-destructive/10"
-                                        onClick={() => handleDeleteExam(exam.$id)}
-                                        disabled={isLoading}
-                                    >
-                                        <Trash2 size={16} />
-                                    </Button>
+                                    <div className="flex items-center">
+                                        <Link href={`/admin/questions/${exam.$id}`}>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 text-blue-600 hover:bg-blue-100 mr-1"
+                                            >
+                                                <Pencil size={16} />
+                                            </Button>
+                                        </Link>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="text-destructive h-8 w-8 hover:bg-destructive/10"
+                                            onClick={() => handleDeleteExam(exam.$id)}
+                                            disabled={isLoading}
+                                        >
+                                            <Trash2 size={16} />
+                                        </Button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

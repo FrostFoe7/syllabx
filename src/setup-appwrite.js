@@ -1,4 +1,4 @@
-import { Client, Databases, Permission, Role, Storage, Users } from 'node-appwrite';
+import { Client, Databases, Permission, Role, Storage, Users, Teams } from 'node-appwrite';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -22,6 +22,7 @@ const ROUTINES_COLLECTION_ID = 'routines';
 const RESULTS_COLLECTION_ID = 'results';
 const CALENDAR_COLLECTION_ID = 'calendar';
 const BUCKET_ID = 'main_storage';
+const ADMIN_TEAM_ID = 'admins';
 
 if (!ENDPOINT || !PROJECT_ID || !API_KEY) {
     console.error('Error: Missing required environment variables.');
@@ -36,6 +37,7 @@ const client = new Client()
 const databases = new Databases(client);
 const storage = new Storage(client);
 const users = new Users(client);
+const teams = new Teams(client);
 
 // Helper to wait
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -101,6 +103,17 @@ async function setup() {
         }
     }
 
+    // 1.5 Create Admins Team
+    try {
+        await teams.get(ADMIN_TEAM_ID);
+        console.log(`Team '${ADMIN_TEAM_ID}' already exists.`);
+    } catch (error) {
+        if (error.code === 404) {
+            await teams.create(ADMIN_TEAM_ID, 'Admins');
+            console.log(`Created team '${ADMIN_TEAM_ID}'`);
+        }
+    }
+
     // Helper to recreate collection
     async function getOrCreateCollection(id, name, permissions) {
                 if (FORCE_RECREATE) {
@@ -136,7 +149,7 @@ async function setup() {
     const usersPermissions = [
         Permission.read(Role.any()),
         Permission.create(Role.any()),
-        Permission.update(Role.users()),
+        Permission.update(Role.users()), // NOTE: Ideally should be Document Security, keeping for compatibility
         Permission.delete(Role.users()),
     ];
     await getOrCreateCollection(USERS_COLLECTION_ID, 'Users', usersPermissions);
@@ -153,23 +166,57 @@ async function setup() {
     // 2.5 Create Admins Collection
     const adminPermissions = [
         Permission.read(Role.any()),
+        Permission.write(Role.team(ADMIN_TEAM_ID))
     ];
     await getOrCreateCollection(ADMINS_COLLECTION_ID, 'Admins', adminPermissions);
     await createAttribute(DATABASE_ID, ADMINS_COLLECTION_ID, 'string', 'userId', 36, true);
 
-    // 2.6 Create Default Admin User
-        let adminUserId = 'admin_user';
-        try {
-            await users.delete(adminUserId);
-            console.log('Deleted old admin user for refresh.');
-        } catch { }
+    // 2.6 Create or Update Default Admin User
+    let adminUserId;
     
+    console.log(`Checking for admin user (${ADMIN_VIRTUAL_EMAIL})...`);
+    
+    try {
+        const userList = await users.list([
+             // Search by email is reliable if unique
+             // We can't query by email directly in list() easily without Query class on server-side SDK sometimes, 
+             // but here we can filter.
+        ]);
+        const existingAdmin = userList.users.find(u => u.email === ADMIN_VIRTUAL_EMAIL || u.phone === ADMIN_PHONE);
+        
+        if (existingAdmin) {
+            adminUserId = existingAdmin.$id;
+            console.log(`✅ Found existing admin user: ${adminUserId}`);
+        } else {
+            // Create new
+            try {
+                const newAdmin = await users.create('admin_user', ADMIN_VIRTUAL_EMAIL, undefined, ADMIN_PASSWORD, ADMIN_NAME);
+                adminUserId = newAdmin.$id;
+                console.log(`✅ Created new admin user: ${adminUserId}`);
+            } catch (createErr) {
+                // Fallback: If 'admin_user' ID is taken but email/phone didn't match (unlikely but possible)
+                if (createErr.code === 409) {
+                     console.log('⚠️ User ID "admin_user" taken or conflict. Fetching...');
+                     // Try to just get 'admin_user'
+                     try {
+                         const u = await users.get('admin_user');
+                         adminUserId = u.$id;
+                     } catch {
+                         console.error("Could not find or create admin user.");
+                         process.exit(1);
+                     }
+                } else {
+                    throw createErr;
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Error resolving admin user:', err.message);
+    }
+
+    if (adminUserId) {
+        // A. Ensure Profile Exists
         try {
-            const newUser = await users.create(adminUserId, ADMIN_VIRTUAL_EMAIL, undefined, ADMIN_PASSWORD, ADMIN_NAME);
-            console.log(`Created admin auth user: ${newUser.$id}`);
-            
-            // Ensure profile exists in users collection
-            try { await databases.deleteDocument(DATABASE_ID, USERS_COLLECTION_ID, adminUserId); } catch { }
             await databases.createDocument(DATABASE_ID, USERS_COLLECTION_ID, adminUserId, {
                 userId: adminUserId,
                 name: ADMIN_NAME,
@@ -178,25 +225,46 @@ async function setup() {
                 createdAt: new Date().toISOString(),
                 enrolledCourses: []
             });
-        } catch (err) {
-            console.log('Admin user creation failed:', err.message);
+            console.log(`✅ Created admin profile document.`);
+        } catch (e) {
+            if (e.code === 409) {
+                console.log(`ℹ️ Admin profile document already exists.`);
+            } else {
+                console.error(`Error creating admin profile: ${e.message}`);
+            }
         }
-    
-        // Add to Admins Collection if not there
+
+        // B. Add to Admins Team
         try {
-            await databases.getDocument(DATABASE_ID, ADMINS_COLLECTION_ID, adminUserId);
-            console.log('Admin already registered in admins collection.');
-        } catch {
+            await teams.createMembership(ADMIN_TEAM_ID, [], undefined, adminUserId);
+            console.log(`✅ Added ${adminUserId} to 'admins' team.`);
+        } catch (e) {
+            if (e.code === 409) {
+                console.log(`ℹ️ User ${adminUserId} is already in 'admins' team.`);
+            } else {
+                console.error(`❌ Error adding to admin team: ${e.message}`);
+            }
+        }
+
+        // C. Register in Admins Collection
+        try {
             await databases.createDocument(DATABASE_ID, ADMINS_COLLECTION_ID, adminUserId, {
                 userId: adminUserId
             });
-            console.log('Admin registered in admins collection.');
+            console.log(`✅ Admin registered in admins collection.`);
+        } catch (e) {
+             if (e.code === 409) {
+                console.log(`ℹ️ Admin already registered in admins collection.`);
+            } else {
+                console.error(`Error registering in admins collection: ${e.message}`);
+            }
         }
+    }
 
     // 3. Create Exams Collection
     await getOrCreateCollection(EXAMS_COLLECTION_ID, 'Exams', [
         Permission.read(Role.any()),
-        Permission.write(Role.users()), // Note: Should be restricted to admins in production
+        Permission.write(Role.team(ADMIN_TEAM_ID)),
     ]);
 
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'originalId', 50, false);
@@ -214,7 +282,7 @@ async function setup() {
     // 4. Create Questions Collection
     await getOrCreateCollection(QUESTIONS_COLLECTION_ID, 'Questions', [
         Permission.read(Role.any()),
-        Permission.write(Role.users()), // Note: Should be restricted to admins in production
+        Permission.write(Role.team(ADMIN_TEAM_ID)),
     ]);
 
     await createAttribute(DATABASE_ID, QUESTIONS_COLLECTION_ID, 'string', 'examId', 50, true);
@@ -232,6 +300,7 @@ async function setup() {
     // 5. Create Categories Collection
     await getOrCreateCollection(CATEGORIES_COLLECTION_ID, 'Categories', [
         Permission.read(Role.any()),
+        Permission.write(Role.team(ADMIN_TEAM_ID)),
     ]);
     await createAttribute(DATABASE_ID, CATEGORIES_COLLECTION_ID, 'string', 'name', 100, true);
     await createAttribute(DATABASE_ID, CATEGORIES_COLLECTION_ID, 'string', 'slug', 100, true);
@@ -239,9 +308,7 @@ async function setup() {
     // 6. Create Courses Collection
     await getOrCreateCollection(COURSES_COLLECTION_ID, 'Courses', [
         Permission.read(Role.any()),
-        Permission.create(Role.users()),
-        Permission.update(Role.users()),
-        Permission.delete(Role.users()),
+        Permission.write(Role.team(ADMIN_TEAM_ID)),
     ]);
     await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'title', 255, true);
     await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'slug', 255, true);
@@ -258,6 +325,7 @@ async function setup() {
     // 7. Create Routines Collection
     await getOrCreateCollection(ROUTINES_COLLECTION_ID, 'Routines', [
         Permission.read(Role.any()),
+        Permission.write(Role.team(ADMIN_TEAM_ID)),
     ]);
     await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'courseId', 100, true);
     await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'date', 100, true);
@@ -268,7 +336,8 @@ async function setup() {
     await getOrCreateCollection(RESULTS_COLLECTION_ID, 'Results', [
         Permission.read(Role.any()),
         Permission.create(Role.users()),
-        Permission.update(Role.users()),
+        Permission.update(Role.team(ADMIN_TEAM_ID)),
+        Permission.delete(Role.team(ADMIN_TEAM_ID)),
     ]);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'userId', 36, true);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'userName', 100, false);
@@ -285,6 +354,7 @@ async function setup() {
     // 8.5 Create Calendar Collection
     await getOrCreateCollection(CALENDAR_COLLECTION_ID, 'Calendar', [
         Permission.read(Role.any()),
+        Permission.write(Role.team(ADMIN_TEAM_ID)),
     ]);
     await createAttribute(DATABASE_ID, CALENDAR_COLLECTION_ID, 'string', 'subject', 255, true);
     await createAttribute(DATABASE_ID, CALENDAR_COLLECTION_ID, 'string', 'date', 100, true);
@@ -299,7 +369,7 @@ async function setup() {
         if (error.code === 404) {
             await storage.createBucket(BUCKET_ID, 'Main Storage', [
                 Permission.read(Role.any()),
-                Permission.write(Role.users()),
+                Permission.write(Role.team(ADMIN_TEAM_ID)), // Restrict bucket writes to admins
             ], false, true, undefined, ['jpg', 'png', 'svg', 'webp']);
             console.log(`Created bucket '${BUCKET_ID}'`);
         }
