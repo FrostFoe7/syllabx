@@ -10,31 +10,7 @@ import { Models, Query } from 'appwrite';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-
-interface ResultDoc extends Models.Document {
-    userId: string;
-    examId: string;
-    marks: number;
-    correctAnswers: number;
-    wrongAnswers: number;
-    totalQuestions: number;
-    submittedAt: string;
-}
-
-interface Student extends Models.Document {
-    userId: string;
-    name: string;
-}
-
-interface Exam extends Models.Document {
-    title: string;
-    courseId: string;
-}
-
-interface Course extends Models.Document {
-    title: string;
-    slug: string;
-}
+import { Result, UserData as Student, Exam, Course } from '@/types';
 
 export default function AdminResultsPage() {
   const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
@@ -42,13 +18,13 @@ export default function AdminResultsPage() {
 
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(appwriteConfig.coursesCollectionId);
   const { data: exams, isLoading: examsLoading } = useCollection<Exam>(appwriteConfig.examsCollectionId, selectedCourseId ? [Query.equal('courseId', selectedCourseId)] : []);
-  const { data: results, isLoading: resultsLoading } = useCollection<ResultDoc>(appwriteConfig.resultsCollectionId, selectedExamId ? [Query.equal('examId', selectedExamId)] : []);
+  const { data: results, isLoading: resultsLoading } = useCollection<Result>(appwriteConfig.resultsCollectionId, selectedExamId ? [Query.equal('examId', selectedExamId)] : []);
   const { data: students, isLoading: studentsLoading } = useCollection<Student>(appwriteConfig.usersCollectionId);
 
   const isLoading = coursesLoading || examsLoading || resultsLoading || studentsLoading;
 
-  const getStudentName = (id: string) => students?.find(s => s.$id === id)?.name || 'Unknown Student';
-  const getExamTitle = (id: string) => exams?.find(e => e.$id === id)?.title || 'Unknown Exam';
+  const getStudentName = (id: string) => students?.find((s: Student) => s.$id === id)?.name || 'Unknown Student';
+  const getExamTitle = (id: string) => exams?.find((e: Exam) => e.$id === id)?.title || 'Unknown Exam';
 
   const sortedResults = React.useMemo(() => {
     if (!results) return [];
@@ -80,7 +56,7 @@ export default function AdminResultsPage() {
             </SelectTrigger>
             <SelectContent>
               {coursesLoading ? <SelectItem value="loading" disabled>Loading...</SelectItem> :
-                courses?.map(course => <SelectItem key={course.$id} value={course.$id}>{course.title}</SelectItem>)
+                courses?.map((course: Course) => <SelectItem key={course.$id} value={course.$id}>{course.title}</SelectItem>)
               }
             </SelectContent>
           </Select>
@@ -91,7 +67,7 @@ export default function AdminResultsPage() {
             <SelectContent>
               {examsLoading ? <SelectItem value="loading" disabled>Loading exams...</SelectItem> :
                exams && exams.length > 0 ?
-                exams.map(exam => <SelectItem key={exam.$id} value={exam.$id}>{exam.title}</SelectItem>) :
+                exams.map((exam: Exam) => <SelectItem key={exam.$id} value={exam.$id}>{exam.title}</SelectItem>) :
                 <SelectItem value="no-exams" disabled>No exams for this course</SelectItem>
               }
             </SelectContent>

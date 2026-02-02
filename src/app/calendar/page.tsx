@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow, isAfter } from 'date-fns';
 import { bn } from 'date-fns/locale';
+import { CalendarItem } from '@/types';
 
 function TimeRemaining({ dateTime }: { dateTime: string | null }) {
     const [timeLeft, setTimeLeft] = useState<string>('...');
@@ -44,16 +45,6 @@ function TimeRemaining({ dateTime }: { dateTime: string | null }) {
 
     return <span>{timeLeft}</span>;
 }
-
-interface CalendarItem extends Models.Document {
-    date: string;
-    topic: string;
-    subject?: string;
-    time?: string;
-    examDateTime?: string | null;
-}
-
-
 
 export default function CalendarPage() {
   const [showMenu, setShowMenu] = useState(false);
@@ -170,7 +161,7 @@ export default function CalendarPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {calendar.map((item) => (
+                        {calendar.map((item: CalendarItem) => (
                            <TableRow key={item.$id}>
                                <TableCell className="py-4 px-6 font-tiro-bangla font-bold">{item.subject || item.topic}</TableCell>
                                <TableCell className="py-4 px-6 font-tiro-bangla">

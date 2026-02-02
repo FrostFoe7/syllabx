@@ -29,16 +29,23 @@ export default function DashboardCoursesPage() {
     const enrollCourse = async () => {
       const courseToEnroll = searchParams.get('course');
       // Exit if no course in URL, or if user/data is still loading
-      if (!courseToEnroll || !user || !databases || isUserLoading) {
+      if (!courseToEnroll || !user || !databases || isUserLoading || isGlobalLoading) {
         return;
       }
 
       const decodedCourseName = decodeURIComponent(courseToEnroll);
+      
+      // Find course by title to get the ID
+      const courseObj = allCourses?.find(c => c.title === decodedCourseName || c.$id === decodedCourseName);
+      const courseIdToEnroll = courseObj ? courseObj.$id : decodedCourseName; // Fallback to name if not found (for legacy/error handling)
+
       const collectionId = appwriteConfig.usersCollectionId;
       const documentId = user.$id;
+      
+      const currentEnrollments = userData?.enrolledCourses || [];
 
-      // Check if already enrolled using data from our hook
-      if (userData?.enrolledCourses?.includes(decodedCourseName)) {
+      // Check if already enrolled using data from our hook (check both ID and Name to be safe)
+      if (currentEnrollments.includes(courseIdToEnroll) || currentEnrollments.includes(decodedCourseName)) {
         // Just remove the query param and do nothing else
         router.replace('/dashboard');
         return;
@@ -52,12 +59,12 @@ export default function DashboardCoursesPage() {
             collectionId,
             documentId,
             {
-              enrolledCourses: [...(userData.enrolledCourses || []), decodedCourseName]
+              enrolledCourses: [...currentEnrollments, courseIdToEnroll]
             }
           );
         } else {
           // If userData is null, document doesn't exist, so create it.
-          const phoneFromEmail = user.email.startsWith('user_') && user.email.endsWith('@syllabx.com')
+          const phoneFromEmail = (user && user.email && user.email.startsWith('user_') && user.email.endsWith('@syllabx.com'))
             ? user.email.substring(5, user.email.indexOf('@'))
             : '';
 
@@ -70,7 +77,7 @@ export default function DashboardCoursesPage() {
                 name: user.name,
                 email: user.email,
                 createdAt: new Date().toISOString(),
-                enrolledCourses: [decodedCourseName],
+                enrolledCourses: [courseIdToEnroll],
                 phone: phoneFromEmail,
             }
           );
@@ -96,10 +103,10 @@ export default function DashboardCoursesPage() {
       }
     };
 
-    if (!isUserLoading) {
+    if (!isUserLoading && !isGlobalLoading) {
         enrollCourse();
     }
-  }, [user, isUserLoading, userData, searchParams, databases, router, toast, refreshUser]);
+  }, [user, isUserLoading, isGlobalLoading, userData, searchParams, databases, router, toast, refreshUser, allCourses]);
 
   if (isUserLoading || isDataLoading || isCoursesLoading) {
     return (
@@ -127,7 +134,9 @@ export default function DashboardCoursesPage() {
   }
 
   const enrolledCourseNames = userData?.enrolledCourses || [];
-  const enrolledCourses = allCourses?.filter((course: Course) => enrolledCourseNames.includes(course.title)) || [];
+  const enrolledCourses = allCourses?.filter((course: Course) => 
+      enrolledCourseNames.includes(course.title) || enrolledCourseNames.includes(course.$id)
+  ) || [];
 
   return (
     <>

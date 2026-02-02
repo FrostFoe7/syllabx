@@ -77,7 +77,7 @@ export default function AdminRoutinesPage() {
 
   const { toast } = useToast();
   const databases = useDatabases();
-  const { data: routines, isLoading: routinesLoading } = useCollection<Routine>(appwriteConfig.routinesCollectionId, [Query.orderDesc('$createdAt')]);
+  const { data: routines, isLoading: routinesLoading, mutate: refreshRoutines } = useCollection<Routine>(appwriteConfig.routinesCollectionId, [Query.orderDesc('$createdAt')]);
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(appwriteConfig.coursesCollectionId);
 
   const form = useForm<RoutineFormValues>({
@@ -109,7 +109,7 @@ export default function AdminRoutinesPage() {
   const onSubmit = async (data: RoutineFormValues) => {
     setIsSaving(true);
     try {
-        const selectedCourse = courses?.find(c => c.$id === data.courseId);
+        const selectedCourse = courses?.find((c: Course) => c.$id === data.courseId);
         const payload = { ...data, courseName: selectedCourse?.title || 'Unknown' };
 
         if (editingRoutine) {
@@ -119,6 +119,7 @@ export default function AdminRoutinesPage() {
             await databases.createDocument(appwriteConfig.databaseId, appwriteConfig.routinesCollectionId, ID.unique(), payload);
             toast({ title: 'Success', description: 'Routine item created.' });
         }
+        refreshRoutines();
         setDialogOpen(false);
     } catch (error) {
         const err = error as { message?: string };
@@ -133,13 +134,14 @@ export default function AdminRoutinesPage() {
     try {
         await databases.deleteDocument(appwriteConfig.databaseId, appwriteConfig.routinesCollectionId, routineId);
         toast({ title: 'Success', description: 'Routine item deleted.' });
+        refreshRoutines();
     } catch (error) {
         const err = error as { message?: string };
         toast({ variant: 'destructive', title: 'Error', description: err.message || 'Failed to delete item.' });
     }
   };
   
-  const getCourseName = (courseId: string) => courses?.find(c => c.$id === courseId)?.title || courseId;
+  const getCourseName = (courseId: string) => courses?.find((c: Course) => c.$id === courseId)?.title || courseId;
 
   return (
     <div className="space-y-6">
@@ -169,7 +171,7 @@ export default function AdminRoutinesPage() {
                     <FormLabel>Course</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select a course" /></SelectTrigger></FormControl>
-                        <SelectContent>{coursesLoading ? <SelectItem value="loading" disabled>Loading...</SelectItem> : courses?.map(c => <SelectItem key={c.$id} value={c.$id}>{c.title}</SelectItem>)}</SelectContent>
+                        <SelectContent>{coursesLoading ? <SelectItem value="loading" disabled>Loading...</SelectItem> : courses?.map((c: Course) => <SelectItem key={c.$id} value={c.$id}>{c.title}</SelectItem>)}</SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
@@ -209,7 +211,7 @@ export default function AdminRoutinesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {routines.map((item) => (
+                {routines.map((item: Routine) => (
                   <TableRow key={item.$id}>
                     <TableCell className="font-medium">{getCourseName(item.courseId)}</TableCell>
                     <TableCell>{item.date}</TableCell>

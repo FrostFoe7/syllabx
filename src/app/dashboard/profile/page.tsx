@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { LogOut, BookOpen, User } from 'lucide-react';
 
-import { useUser, useAccount, useDatabases, appwriteConfig } from '@/appwrite';
+import { useUser, useAccount, useDatabases, appwriteConfig, useGlobalData } from '@/appwrite';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Models } from 'appwrite';
+import { Course, UserData } from '@/types';
 
 const profileFormSchema = z.object({
   displayName: z.string().min(1, 'নাম আবশ্যক'),
@@ -37,14 +38,9 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-interface UserData extends Models.Document {
-    name: string;
-    institution?: string;
-    enrolledCourses: string[];
-}
-
 export default function ProfilePage() {
   const { user, profile: globalProfile, isLoading: isUserLoading, logout, refreshUser } = useUser();
+  const { courses: allCourses, isLoading: isCoursesLoading } = useGlobalData();
   const account = useAccount();
   const databases = useDatabases();
   const router = useRouter();
@@ -78,7 +74,6 @@ export default function ProfilePage() {
 
     try {
       await account.updateName(data.displayName);
-      await refreshUser(); // Update global context
 
       await databases.updateDocument(
         appwriteConfig.databaseId,
@@ -89,6 +84,8 @@ export default function ProfilePage() {
           institution: data.collegeName,
         }
       );
+
+      await refreshUser(); // Update global context after successful DB update
 
       toast({
         title: 'প্রোফাইল আপডেট হয়েছে',
@@ -115,7 +112,13 @@ export default function ProfilePage() {
     return <div>Loading profile...</div>;
   }
 
-  const enrolledCourses = userData?.enrolledCourses || [];
+  const enrolledCourseIds = userData?.enrolledCourses || [];
+  
+  // Resolve IDs to Titles
+  const displayCourses = enrolledCourseIds.map(id => {
+      const course = allCourses?.find((c: Course) => c.$id === id || c.title === id); // Check both ID and Title (legacy)
+      return course ? course.title : id; // Fallback to ID if not found (should be rare)
+  });
 
   return (
     <div className="space-y-6">
@@ -183,11 +186,11 @@ export default function ProfilePage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {enrolledCourses.length > 0 ? (
+          {displayCourses.length > 0 ? (
             <div className="flex flex-wrap gap-2">
-              {enrolledCourses.map((course: string) => (
-                <Badge key={course} variant="secondary" className="text-base font-tiro-bangla p-2">
-                  {course}
+              {displayCourses.map((courseTitle: string, idx: number) => (
+                <Badge key={idx} variant="secondary" className="text-base font-tiro-bangla p-2">
+                  {courseTitle}
                 </Badge>
               ))}
             </div>

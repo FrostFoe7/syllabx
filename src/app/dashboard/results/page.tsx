@@ -32,7 +32,7 @@ export default function ResultsPage() {
           </div>
       ) : results && results.length > 0 ? (
           <div className="grid gap-4">
-              {results.map((result) => (
+              {results.map((result: Result) => (
                   <Link key={result.$id} href={`/dashboard/results/${result.$id}`}>
                     <Card className="hover:shadow-md transition-all border-l-4 border-l-primary group">
                         <CardContent className="p-4 flex items-center justify-between">

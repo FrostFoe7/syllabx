@@ -13,16 +13,16 @@ export function useCollection<T extends Models.Document>(
     // We use a query key that depends on collectionId and queries
     const queryKey = useMemo(() => ['collection', collectionId, ...queries], [collectionId, queries]);
 
-    const { data, isLoading, isError, refetch } = useQuery({
+    const { data, isLoading, isError, error, refetch } = useQuery({
         queryKey,
         queryFn: async () => {
-            if (!collectionId) return [];
+            if (!collectionId) return null;
             const response = await databases.listDocuments<T>(
                 appwriteConfig.databaseId,
                 collectionId,
                 queries
             );
-            return response.documents;
+            return response;
         },
         enabled: !!collectionId, // Only run if collectionId is provided
     });
@@ -36,26 +36,31 @@ export function useCollection<T extends Models.Document>(
                 const event = response.events[0];
                 const payload = response.payload as T;
 
-                queryClient.setQueryData<T[]>(queryKey, (oldData) => {
-                    const currentData = oldData || [];
+                queryClient.setQueryData<Models.DocumentList<T>>(queryKey, (oldData) => {
+                    const currentDocs = oldData?.documents || [];
+                    const currentTotal = oldData?.total || 0;
 
                     if (event.includes('.create')) {
-                        // Check uniqueness just in case
-                        if (currentData.some(d => d.$id === payload.$id)) return currentData;
-                        return [payload, ...currentData];
+                        if (currentDocs.some(d => d.$id === payload.$id)) return oldData;
+                        return { total: currentTotal + 1, documents: [payload, ...currentDocs] };
                     }
 
                     if (event.includes('.update')) {
-                        return currentData.map((doc) => 
-                            doc.$id === payload.$id ? payload : doc
-                        );
+                        return {
+                            ...oldData,
+                            documents: currentDocs.map((doc) => doc.$id === payload.$id ? payload : doc),
+                            total: currentTotal // Total doesn't change on update
+                        } as Models.DocumentList<T>;
                     }
 
                     if (event.includes('.delete')) {
-                        return currentData.filter((doc) => doc.$id !== payload.$id);
+                        return {
+                            total: Math.max(0, currentTotal - 1),
+                            documents: currentDocs.filter((doc) => doc.$id !== payload.$id)
+                        };
                     }
 
-                    return currentData;
+                    return oldData;
                 });
             }
         );
@@ -66,9 +71,12 @@ export function useCollection<T extends Models.Document>(
     }, [collectionId, queryClient, queryKey]);
 
     return { 
-        data: data || null, 
+        data: data?.documents || [],   // Return empty array if no data
+        total: data?.total || 0,       // New total field
+        fullResponse: data,            // Access to full response
         isLoading, 
         isError: !!isError, 
-        mutate: refetch // Alias refetch as mutate to match previous API
+        error,                         // Expose error
+        mutate: refetch 
     };
 }

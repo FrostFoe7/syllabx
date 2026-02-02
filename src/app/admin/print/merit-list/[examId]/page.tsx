@@ -53,9 +53,9 @@ export default function PrintMeritListPage() {
         const examEndTime = new Date(exam.endTime);
 
         return results
-            .filter(r => new Date(r.submittedAt) <= examEndTime) // Filter by submission time
-            .map(r => {
-                const student = students.find(s => s.$id === r.userId);
+            .filter((r: ResultDoc) => new Date(r.submittedAt) <= examEndTime) // Filter by submission time
+            .map((r: ResultDoc) => {
+                const student = students.find((s: StudentDoc) => s.$id === r.userId);
                 return {
                     ...r,
                     studentName: student?.name || 'Unknown Student',
@@ -110,7 +110,7 @@ export default function PrintMeritListPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {meritList.map((result, index) => (
+                        {meritList.map((result: any, index: number) => (
                             <tr key={result.$id} className="odd:bg-white even:bg-gray-50">
                                 <td className="p-2 border font-bold">{index + 1}</td>
                                 <td className="p-2 border">{result.studentName}</td>

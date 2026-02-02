@@ -18,6 +18,7 @@ export interface UserProfile extends Models.Document {
 interface UserContextType {
     currentAccount: Models.User<Models.Preferences> | null;
     user: UserProfile | null;
+    profile: UserProfile | null;
     isAdmin: boolean;
     isLoading: boolean;
     refreshUser: () => Promise<void>;
@@ -27,6 +28,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType>({
     currentAccount: null,
     user: null,
+    profile: null,
     isAdmin: false,
     isLoading: true,
     refreshUser: async () => {},
@@ -118,6 +120,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     const value = useMemo(() => ({
         currentAccount: currentAccount || null,
         user: userProfile || null,
+        profile: userProfile || null,
         isAdmin: !!isAdmin,
         isLoading,
         refreshUser,

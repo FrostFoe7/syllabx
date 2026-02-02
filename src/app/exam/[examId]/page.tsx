@@ -10,32 +10,10 @@ import { Loader2, Clock, AlertTriangle, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Exam, Question, UserData } from '@/types';
+import { isUserEnrolled } from '@/lib/enrollment';
 
-interface ExamDoc extends Models.Document {
-    title: string;
-    courseId: string;
-    courseName?: string;
-    duration: number;
-    startTime: string;
-    endTime: string;
-    negativeMark: number;
-}
-
-interface QuestionDoc extends Models.Document {
-    q: string;
-    a1: string;
-    a2: string;
-    a3: string;
-    a4: string;
-    ans: number;
-    exp: string;
-}
-
-interface UserData extends Models.Document {
-    enrolledCourses: string[];
-}
-
-const QuestionNavigation = ({ questions, onQuestionSelect, currentQuestionIndex }: { questions: QuestionDoc[], onQuestionSelect: (index: number) => void, currentQuestionIndex: number }) => {
+const QuestionNavigation = ({ questions, onQuestionSelect, currentQuestionIndex }: { questions: Question[], onQuestionSelect: (index: number) => void, currentQuestionIndex: number }) => {
     return (
         <div className="sticky top-20 h-fit hidden md:block">
             <Card>
@@ -75,8 +53,8 @@ export default function ExamEnginePage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
   const questionRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
-  const { data: exam, isLoading: examLoading } = useDoc<ExamDoc>(appwriteConfig.examsCollectionId, examId);
-  const { data: questions, isLoading: questionsLoading } = useCollection<QuestionDoc>(
+  const { data: exam, isLoading: examLoading } = useDoc<Exam>(appwriteConfig.examsCollectionId, examId);
+  const { data: questions, isLoading: questionsLoading } = useCollection<Question>(
     appwriteConfig.questionsCollectionId,
     [Query.equal('examId', examId)]
   );
@@ -84,9 +62,7 @@ export default function ExamEnginePage() {
   const userData = globalProfile as UserData | null;
 
   const isEnrolled = React.useMemo(() => {
-      if (!userData || !exam) return true;
-      return (exam.courseName && userData.enrolledCourses.includes(exam.courseName)) || 
-             userData.enrolledCourses.includes(exam.courseId);
+      return isUserEnrolled(userData, exam?.courseId || '', exam?.courseName);
   }, [userData, exam]);
 
   const handleSubmit = React.useCallback(async () => {
@@ -104,7 +80,7 @@ export default function ExamEnginePage() {
         let wrongCount = 0;
         const currentAnswers = answersRef.current;
         
-        questions.forEach(q => {
+        questions.forEach((q: Question) => {
             const selected = currentAnswers[q.$id];
             if (selected) {
                 if (selected === q.ans) {
@@ -278,7 +254,7 @@ export default function ExamEnginePage() {
       <main className="container mx-auto p-4 md:p-8 mt-4">
         <div className="grid md:grid-cols-[1fr_280px] gap-8 items-start">
             <div className="space-y-6">
-                {questions.map((question, index) => (
+                {questions.map((question: Question, index: number) => (
                     <Card 
                         key={question.$id} 
                         className="shadow-xl border-none"

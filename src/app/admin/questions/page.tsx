@@ -126,7 +126,7 @@ export default function AdminQuestionsPage() {
       }
 
       createdExamId = ID.unique();
-      const selectedCourse = courses?.find(c => c.$id === data.courseId);
+      const selectedCourse = courses?.find((c: Course) => c.$id === data.courseId);
 
       const examDataPayload = {
         originalId: createdExamId,
@@ -250,7 +250,7 @@ export default function AdminQuestionsPage() {
                                 <SelectContent>
                                     {coursesLoading ? (
                                         <SelectItem value="loading" disabled>Loading courses...</SelectItem>
-                                    ) : courses?.map((course) => (
+                                    ) : courses?.map((course: Course) => (
                                     <SelectItem key={course.$id} value={course.$id}>
                                         {course.title}
                                     </SelectItem>
@@ -476,7 +476,7 @@ export default function AdminQuestionsPage() {
                         </div>
                     ) : existingExams && existingExams.length > 0 ? (
                         <div className="space-y-4">
-                            {existingExams.map((exam) => (
+                            {existingExams.map((exam: Exam) => (
                                 <div key={exam.$id} className="flex justify-between items-center p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                                     <div className="overflow-hidden">
                                         <h4 className="font-bold truncate text-sm">{exam.title}</h4>

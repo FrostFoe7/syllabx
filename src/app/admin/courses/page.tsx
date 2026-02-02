@@ -39,7 +39,7 @@ export default function AdminCoursesPage() {
           </div>
       ) : displayCourses.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {displayCourses.map((course) => (
+            {displayCourses.map((course: Course) => (
                 <Card key={course.$id}>
                     <CardHeader className="p-0">
                         <Image src={course.image} alt={course.title} width={400} height={200} className="w-full h-32 object-cover rounded-t-lg" />

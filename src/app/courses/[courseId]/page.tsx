@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Query, Models } from 'appwrite';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Routine } from '@/types';
 
 export default function CourseDetailPage() {
   const params = useParams();
@@ -23,7 +24,7 @@ export default function CourseDetailPage() {
   
   const course = courses?.[0];
 
-  const { data: routine } = useCollection<{ date: string; topic: string; time?: string } & Models.Document>(
+  const { data: routine } = useCollection<Routine>(
       appwriteConfig.routinesCollectionId,
       [Query.equal('courseId', courseId)]
   );
@@ -219,7 +220,7 @@ export default function CourseDetailPage() {
                               </tr>
                           </thead>
                           <tbody>
-                              {routine.map((item, index) => (
+                              {routine.map((item: Routine, index: number) => (
                                   <tr key={index} className="odd:bg-white even:bg-yellow-50/50 hover:bg-yellow-100 transition-colors">
                                       <td className="p-4 border-b border-yellow-100 text-gray-700">{item.date}</td>
                                       <td className="p-4 border-b border-yellow-100 text-gray-800 font-medium">{item.topic}</td>

@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Calendar, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Exam, UserData } from '@/types';
+import { isUserEnrolled } from '@/lib/enrollment';
 
 function ExamCard({ exam }: { exam: Exam }) {
     const router = useRouter();
@@ -121,9 +122,10 @@ export default function ExamsPage() {
     
     const filteredExams = useMemo(() => {
         if (!allExams) return [];
-        const enrolledCourseNames = userData?.enrolledCourses || [];
-        return allExams.filter((exam) => enrolledCourseNames.includes(exam.courseName || exam.courseId));
-    }, [allExams, userData?.enrolledCourses]);
+        return allExams.filter((exam: Exam) => 
+            isUserEnrolled(userData, exam.courseId, exam.courseName)
+        );
+    }, [allExams, userData]);
 
     const categorizedExams = useMemo(() => {
         if (!filteredExams) {

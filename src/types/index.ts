@@ -4,8 +4,8 @@ export interface UserData extends Models.Document {
     userId: string;
     name: string;
     email: string;
-    phone: string;
-    createdAt: string;
+    phone?: string;
+    createdAt?: string;
     enrolledCourses: string[];
     roll?: string;
     institution?: string;
@@ -36,7 +36,7 @@ export interface Exam extends Models.Document {
     endTime: string;
     negativeMark: number;
     courseId: string;
-    courseName: string;
+    courseName?: string;
 }
 
 export interface Question extends Models.Document {
@@ -76,8 +76,9 @@ export interface Routine extends Models.Document {
     time?: string;
 }
 
-export interface CalendarEvent extends Models.Document {
+export interface CalendarItem extends Models.Document {
     subject: string;
+    topic?: string;
     date: string;
     time?: string;
     examDateTime?: string;

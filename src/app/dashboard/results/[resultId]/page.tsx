@@ -26,7 +26,7 @@ export default function ResultDetailPage() {
     examId ? [Query.equal('examId', examId)] : []
   );
   
-  const { data: exam, isLoading: examLoading } = useDoc<Exam>(appwriteConfig.examsCollectionId, examId);
+  const { data: exam, isLoading: examLoading } = useDoc<Exam>(appwriteConfig.examsCollectionId, examId || '');
   
   const { data: allResults, isLoading: allResultsLoading } = useCollection<Result>(
       appwriteConfig.resultsCollectionId, 
@@ -50,9 +50,9 @@ export default function ResultDetailPage() {
 
     const examEndTime = new Date(exam.endTime);
     const validResults = allResults
-        .filter(r => new Date(r.submittedAt) <= examEndTime)
-        .map(r => {
-            const student = allStudents.find(s => s.$id === r.userId);
+        .filter((r: Result) => new Date(r.submittedAt) <= examEndTime)
+        .map((r: Result) => {
+            const student = allStudents.find((s: StudentDoc) => s.$id === r.userId);
             return {
                 ...r,
                 studentName: student?.name || 'Unknown',
@@ -60,7 +60,7 @@ export default function ResultDetailPage() {
         })
         .sort((a, b) => b.marks - a.marks);
     
-    const rank = validResults.findIndex(r => r.userId === user.$id) + 1;
+    const rank = validResults.findIndex((r: any) => r.userId === user.$id) + 1;
 
     return { meritList: validResults, userRank: rank > 0 ? rank : null };
   }, [allResults, allStudents, exam, user]);
@@ -135,7 +135,7 @@ export default function ResultDetailPage() {
               Question Review
           </h2>
           
-          {questions?.map((q, index) => {
+          {questions?.map((q: QuestionDoc, index: number) => {
               const selected = userAnswers[q.$id];
               const isCorrect = selected === q.ans;
               const isUnanswered = !selected;

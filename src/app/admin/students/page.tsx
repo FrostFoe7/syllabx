@@ -20,15 +20,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from '@/hooks/use-toast';
-import { Course } from '@/types';
-
-interface Student extends Models.Document {
-    name: string;
-    email: string;
-    phone?: string;
-    createdAt?: string;
-    enrolledCourses: string[]; // Array of Course IDs
-}
+import { Course, UserData as Student } from '@/types';
 
 export default function AdminStudentsPage() {
   const { data: students, isLoading: studentsLoading, mutate: refreshStudents } = useCollection<Student>(
@@ -43,7 +35,7 @@ export default function AdminStudentsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const filteredStudents = useMemo(() => {
-    return students?.filter(student => 
+    return students?.filter((student: Student) => 
         student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.phone?.includes(searchTerm)
@@ -89,7 +81,7 @@ export default function AdminStudentsPage() {
                        <div className="md:col-span-1 text-center">Enrolled</div>
                        <div className="md:col-span-1 text-right">Actions</div>
                    </div>
-                   {filteredStudents.map((student) => (
+                   {filteredStudents.map((student: Student) => (
                        <div key={student.$id} className="grid grid-cols-1 md:grid-cols-5 p-4 border-b last:border-0 hover:bg-muted/50 transition-colors items-center gap-4">
                            <div className="font-medium">
                                 {student.name}
@@ -169,12 +161,14 @@ function EnrollmentDialog({
         }
     }, [student]);
 
-    const handleToggle = (courseId: string, isChecked: boolean) => {
+    const handleToggle = (courseId: string, courseTitle: string, isChecked: boolean) => {
         setEnrolledIds(prev => {
             if (isChecked) {
+                // When enabling, only add the ID (clean data)
                 return [...prev, courseId];
             } else {
-                return prev.filter(id => id !== courseId);
+                // When disabling, remove both ID and Title (legacy cleanup)
+                return prev.filter(id => id !== courseId && id !== courseTitle);
             }
         });
     };
@@ -218,7 +212,7 @@ function EnrollmentDialog({
                         <p className="text-center text-muted-foreground py-4">No courses available.</p>
                     ) : (
                         allCourses.map(course => {
-                            const isEnrolled = enrolledIds.includes(course.$id);
+                            const isEnrolled = enrolledIds.includes(course.$id) || enrolledIds.includes(course.title);
                             return (
                                 <div key={course.$id} className="flex items-center justify-between p-3 border rounded-lg">
                                     <div className="space-y-1">
@@ -233,7 +227,7 @@ function EnrollmentDialog({
                                     <Switch
                                         id={course.$id}
                                         checked={isEnrolled}
-                                        onCheckedChange={(c) => handleToggle(course.$id, c)}
+                                        onCheckedChange={(c) => handleToggle(course.$id, course.title, c)}
                                     />
                                 </div>
                             )

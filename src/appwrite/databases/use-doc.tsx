@@ -31,7 +31,7 @@ export function useDoc<T extends Models.Document>(collectionId: string, document
                 const event = response.events[0];
                 const payload = response.payload as T;
 
-                queryClient.setQueryData<T>(queryKey, (oldData) => {
+                queryClient.setQueryData<T | null>(queryKey, (oldData) => {
                     if (event.includes('.update')) {
                         return payload;
                     }

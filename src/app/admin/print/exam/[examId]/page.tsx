@@ -81,7 +81,7 @@ export default function PrintExamPage() {
             </header>
 
             <main className="space-y-6">
-                {questions.map((q, index) => {
+                {questions.map((q: QuestionDoc, index: number) => {
                     const options = [q.a1, q.a2, q.a3, q.a4];
                     return (
                         <div key={q.$id} className="break-inside-avoid-page pb-4">

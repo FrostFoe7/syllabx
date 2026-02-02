@@ -170,7 +170,7 @@ export default function EditExamPage(props: { params: Promise<{ examId: string }
           throw new Error("You must have at least one question");
       }
 
-      const selectedCourse = courses?.find(c => c.$id === data.courseId);
+      const selectedCourse = courses?.find((c: Course) => c.$id === data.courseId);
 
       // 1. Update Exam Document
       const examDataPayload = {
@@ -315,7 +315,7 @@ export default function EditExamPage(props: { params: Promise<{ examId: string }
                         <SelectContent>
                             {coursesLoading ? (
                                 <SelectItem value="loading" disabled>Loading courses...</SelectItem>
-                            ) : courses?.map((course) => (
+                            ) : courses?.map((course: Course) => (
                             <SelectItem key={course.$id} value={course.$id}>
                                 {course.title}
                             </SelectItem>
