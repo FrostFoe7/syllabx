@@ -10,8 +10,9 @@ import { Loader2, Clock, AlertTriangle, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Exam, Question, UserData } from '@/types';
+import { Exam, Question, UserData, Result } from '@/types';
 import { isUserEnrolled } from '@/lib/enrollment';
+import { parseISO, isAfter, isBefore, differenceInSeconds } from 'date-fns';
 
 const QuestionNavigation = ({ questions, onQuestionSelect, currentQuestionIndex }: { questions: Question[], onQuestionSelect: (index: number) => void, currentQuestionIndex: number }) => {
     return (
@@ -50,6 +51,8 @@ export default function ExamEnginePage() {
   const [timeLeft, setTimeLeft] = React.useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isFinished, setIsFinished] = React.useState(false);
+  const [isCheckingResult, setIsCheckingResult] = React.useState(true);
+  const [accessError, setAccessError] = React.useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
   const questionRefs = React.useRef<(HTMLDivElement | null)[]>([]);
 
@@ -92,6 +95,9 @@ export default function ExamEnginePage() {
         });
 
         const totalMarks = correctCount - (wrongCount * (exam.negativeMark || 0));
+        
+        // Determine if this is a practice submission (exam has already ended)
+        const isPractice = isAfter(new Date(), parseISO(exam.endTime));
 
         const resultPayload = {
             userId: user.$id,
@@ -104,7 +110,8 @@ export default function ExamEnginePage() {
             wrongAnswers: wrongCount,
             marks: totalMarks,
             submittedAt: new Date().toISOString(),
-            answersJSON: JSON.stringify(currentAnswers)
+            answersJSON: JSON.stringify(currentAnswers),
+            isPractice: isPractice
         };
 
         await databases.createDocument(
@@ -141,17 +148,65 @@ export default function ExamEnginePage() {
     };
   }, [toast]);
 
-  // Timer Logic
+  // Check for existing result
   React.useEffect(() => {
-    if (exam && timeLeft === null && !isFinished) {
-      const serverEndTime = new Date(exam.endTime).getTime();
-      const now = new Date().getTime();
-      const durationInSeconds = exam.duration * 60;
-      const timeUntilEnd = Math.max(0, (serverEndTime - now) / 1000);
-      const initialTime = Math.min(durationInSeconds, timeUntilEnd);
-      setTimeLeft(initialTime);
+    async function checkExistingResult() {
+        if (!user || !examId || !exam) return;
+        try {
+            const results = await databases.listDocuments(
+                appwriteConfig.databaseId,
+                appwriteConfig.resultsCollectionId,
+                [
+                    Query.equal('userId', user.$id),
+                    Query.equal('examId', examId)
+                ]
+            );
+            
+            // If the exam is currently LIVE and user has a result, block them.
+            // If it's PRACTICE mode, we allow multiple attempts (or you could filter by isPractice).
+            const isLive = !isAfter(new Date(), parseISO(exam.endTime)) && !isBefore(new Date(), parseISO(exam.startTime));
+            
+            if (isLive && results.total > 0) {
+                setAccessError("You have already submitted this exam during the live window.");
+            }
+        } catch (error) {
+            console.error("Error checking existing results:", error);
+        } finally {
+            setIsCheckingResult(false);
+        }
     }
-  }, [exam, timeLeft, isFinished]);
+    if (exam) checkExistingResult();
+  }, [user, examId, databases, exam]);
+
+  // Timer and Access Logic
+  React.useEffect(() => {
+    if (exam && !isFinished && !isCheckingResult && !accessError) {
+      const now = new Date();
+      const startTime = parseISO(exam.startTime);
+      const endTime = parseISO(exam.endTime);
+
+      if (isBefore(now, startTime)) {
+          setAccessError(`This exam has not started yet. It will start at ${format(startTime, 'PPpp')}`);
+          return;
+      }
+
+      const isLive = isWithinInterval(now, { start: startTime, end: endTime });
+      const isPast = isAfter(now, endTime);
+
+      if (timeLeft === null) {
+          const durationInSeconds = exam.duration * 60;
+          
+          if (isLive) {
+              const secondsUntilEnd = differenceInSeconds(endTime, now);
+              const initialTime = Math.min(durationInSeconds, secondsUntilEnd);
+              setTimeLeft(Math.max(0, initialTime));
+          } else if (isPast) {
+              // For practice, give full duration
+              setTimeLeft(durationInSeconds);
+          }
+      }
+    }
+  }, [exam, timeLeft, isFinished, isCheckingResult, accessError]);
   
   React.useEffect(() => {
       if (timeLeft === null || isFinished) return;
@@ -198,8 +253,19 @@ export default function ExamEnginePage() {
 }, [questions]);
 
 
-  if (examLoading || questionsLoading) {
+  if (examLoading || questionsLoading || isCheckingResult) {
     return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
+
+  if (accessError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-screen space-y-4 p-6 text-center">
+            <AlertTriangle className="h-12 w-12 text-destructive" />
+            <h1 className="text-2xl font-bold">Access Restricted</h1>
+            <p>{accessError}</p>
+            <Button onClick={() => router.push('/dashboard/exams')}>Back to Exams</Button>
+        </div>
+      );
   }
 
   if (!exam || !questions || questions.length === 0) {
@@ -230,12 +296,19 @@ export default function ExamEnginePage() {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
+  const isPractice = exam ? isAfter(new Date(), parseISO(exam.endTime)) : false;
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <header className="sticky top-0 z-30 bg-white border-b shadow-sm p-4">
         <div className="container mx-auto flex justify-between items-center">
             <div>
-                <h1 className="font-bold text-lg md:text-xl truncate max-w-[200px] md:max-w-md">{exam.title}</h1>
+                <div className="flex items-center gap-2">
+                    <h1 className="font-bold text-lg md:text-xl truncate max-w-[150px] md:max-w-md">{exam.title}</h1>
+                    {isPractice && (
+                        <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Practice Mode</span>
+                    )}
+                </div>
                 <p className="text-xs text-muted-foreground">Total Questions: {questions.length}</p>
             </div>
             <div className="flex items-center gap-4">

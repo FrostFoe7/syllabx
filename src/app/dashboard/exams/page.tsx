@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useUser, useCollection, appwriteConfig } from '@/appwrite';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Calendar, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isWithinInterval, isBefore, isAfter, parseISO } from 'date-fns';
 import { Exam, UserData } from '@/types';
 import { isUserEnrolled } from '@/lib/enrollment';
 
@@ -16,15 +16,15 @@ function ExamCard({ exam }: { exam: Exam }) {
     const router = useRouter();
     const [status, setStatus] = useState<'upcoming' | 'active' | 'finished'>('upcoming');
 
-    const startTime = useMemo(() => new Date(exam.startTime), [exam.startTime]);
-    const endTime = useMemo(() => new Date(exam.endTime), [exam.endTime]);
+    const startTime = useMemo(() => parseISO(exam.startTime), [exam.startTime]);
+    const endTime = useMemo(() => parseISO(exam.endTime), [exam.endTime]);
 
     useEffect(() => {
         const updateStatus = () => {
             const now = new Date();
-            if (now < startTime) {
+            if (isBefore(now, startTime)) {
                 setStatus('upcoming');
-            } else if (now > endTime) {
+            } else if (isAfter(now, endTime)) {
                 setStatus('finished');
             } else {
                 setStatus('active');
@@ -38,18 +38,21 @@ function ExamCard({ exam }: { exam: Exam }) {
     }, [startTime, endTime]);
 
     const handleStartExam = () => {
-        if (status === 'active') {
+        if (status === 'active' || status === 'finished') {
             router.push(`/exam/${exam.$id}`);
         }
     };
 
     let buttonText: string;
+    let buttonVariant: "default" | "outline" | "secondary" = "default";
+
     switch (status) {
         case 'active':
             buttonText = 'Start Exam';
             break;
         case 'finished':
-            buttonText = 'Finished';
+            buttonText = 'Practice Exam';
+            buttonVariant = 'outline';
             break;
         case 'upcoming':
         default:
@@ -80,7 +83,8 @@ function ExamCard({ exam }: { exam: Exam }) {
             <CardFooter>
                 <Button 
                     className="w-full" 
-                    disabled={status !== 'active'}
+                    variant={buttonVariant}
+                    disabled={status === 'upcoming'}
                     onClick={handleStartExam}
                 >
                     {buttonText}
@@ -138,12 +142,12 @@ export default function ExamsPage() {
         const upcoming: Exam[] = [];
 
         for (const exam of filteredExams) {
-            const startTime = new Date(exam.startTime);
-            const endTime = new Date(exam.endTime);
+            const start = parseISO(exam.startTime);
+            const end = parseISO(exam.endTime);
 
-            if (endTime < now) {
+            if (isAfter(now, end)) {
                 past.push(exam);
-            } else if (startTime > now) {
+            } else if (isBefore(now, start)) {
                 upcoming.push(exam);
             } else {
                 active.push(exam);

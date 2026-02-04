@@ -62,6 +62,7 @@ export interface Result extends Models.Document {
     wrongAnswers: number;
     submittedAt: string;
     answersJSON: string;
+    isPractice?: boolean;
 }
 
 export interface Category extends Models.Document {

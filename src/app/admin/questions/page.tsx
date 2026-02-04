@@ -37,6 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Course, Exam } from '@/types';
+import { formatISO } from 'date-fns';
 
 const jsonFormatPlaceholder = `[
   {
@@ -136,8 +137,8 @@ export default function AdminQuestionsPage() {
         duration: Math.floor(Number(data.duration)),
         totalQuestions: questionsData.length,
         negativeMark: Number(data.negativeMark),
-        startTime: new Date(data.startTime).toISOString(),
-        endTime: new Date(data.endTime).toISOString(),
+        startTime: formatISO(new Date(data.startTime)),
+        endTime: formatISO(new Date(data.endTime)),
         subject: selectedCourse?.title || data.examName, 
         searchTags: data.examName
       };

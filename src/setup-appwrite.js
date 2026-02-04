@@ -328,6 +328,7 @@ async function setup() {
         Permission.write(Role.team(ADMIN_TEAM_ID)),
     ]);
     await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'courseId', 100, true);
+    await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'courseName', 255, false);
     await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'date', 100, true);
     await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'topic', 255, true);
     await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'time', 100, false);
@@ -350,6 +351,7 @@ async function setup() {
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'integer', 'wrongAnswers', null, true);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'submittedAt', 30, true);
     await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'string', 'answersJSON', 50000, false);
+    await createAttribute(DATABASE_ID, RESULTS_COLLECTION_ID, 'boolean', 'isPractice', false, false);
 
     // 8.5 Create Calendar Collection
     await getOrCreateCollection(CALENDAR_COLLECTION_ID, 'Calendar', [

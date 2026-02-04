@@ -18,6 +18,11 @@ export const ExamFormSchema = z.object({
   uploadMode: z.enum(['json', 'manual']).default('json'),
   questionsJson: z.string().optional(),
   questions: z.array(ExamQuestionSchema).optional(),
+}).refine((data) => {
+    return new Date(data.endTime) > new Date(data.startTime);
+}, {
+    message: "End time must be after start time",
+    path: ["endTime"]
 });
 
 export type ExamFormValues = z.infer<typeof ExamFormSchema>;

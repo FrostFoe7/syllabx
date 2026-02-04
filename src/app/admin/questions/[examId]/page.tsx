@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Course, Exam, Question } from '@/types';
 import Link from 'next/link';
+import { formatISO, parseISO, format } from 'date-fns';
 
 const jsonFormatPlaceholder = `[
   {
@@ -115,8 +116,8 @@ export default function EditExamPage(props: { params: Promise<{ examId: string }
             form.reset({
                 courseId: exam.courseId,
                 examName: exam.title,
-                startTime: exam.startTime ? new Date(exam.startTime).toISOString().slice(0, 16) : '',
-                endTime: exam.endTime ? new Date(exam.endTime).toISOString().slice(0, 16) : '',
+                startTime: exam.startTime ? format(parseISO(exam.startTime), "yyyy-MM-dd'T'HH:mm") : '',
+                endTime: exam.endTime ? format(parseISO(exam.endTime), "yyyy-MM-dd'T'HH:mm") : '',
                 duration: exam.duration,
                 negativeMark: exam.negativeMark,
                 uploadMode: 'manual',
@@ -180,8 +181,8 @@ export default function EditExamPage(props: { params: Promise<{ examId: string }
         duration: Math.floor(Number(data.duration)),
         totalQuestions: newQuestionsData.length,
         negativeMark: Number(data.negativeMark),
-        startTime: new Date(data.startTime).toISOString(),
-        endTime: new Date(data.endTime).toISOString(),
+        startTime: formatISO(new Date(data.startTime)),
+        endTime: formatISO(new Date(data.endTime)),
         subject: selectedCourse?.title || data.examName, 
         searchTags: data.examName
       };
