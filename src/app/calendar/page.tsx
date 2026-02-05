@@ -3,64 +3,38 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { UserRound, Menu, Send, Lock, Home as HomeIcon, BookOpen, Info, Calendar as CalendarIcon } from 'lucide-react';
-import { useUser, useCollection, appwriteConfig } from '@/appwrite';
+import { UserRound, Menu, Send, Home as HomeIcon, BookOpen, Info, Calendar as CalendarIcon } from 'lucide-react';
+import { useUser } from '@/appwrite';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Skeleton } from '@/components/ui/skeleton';
-import { formatDistanceToNow, isAfter } from 'date-fns';
-import { bn } from 'date-fns/locale';
-import { CalendarItem } from '@/types';
 
-function TimeRemaining({ dateTime }: { dateTime: string | null }) {
-    const [timeLeft, setTimeLeft] = useState<string>('...');
-
-    useEffect(() => {
-        if (!dateTime) {
-            setTimeLeft('সময় নির্ধারিত হয়নি');
-            return;
-        }
-
-        const targetDate = new Date(dateTime);
-        let intervalId: NodeJS.Timeout;
-
-        const update = () => {
-            if (isAfter(new Date(), targetDate)) {
-                setTimeLeft('পরীক্ষা শেষ');
-                if (intervalId) clearInterval(intervalId);
-                return true; // Indicates the countdown is finished
-            } else {
-                setTimeLeft(formatDistanceToNow(targetDate, { locale: bn, addSuffix: true }));
-                return false;
-            }
-        };
-        
-        if (!update()) {
-             intervalId = setInterval(() => {
-                if (update()) clearInterval(intervalId);
-            }, 60000); // Update every minute
-        }
-
-        return () => {
-            if(intervalId) clearInterval(intervalId);
-        };
-    }, [dateTime]);
-
-    return <span>{timeLeft}</span>;
-}
+// Static data as requested by the user
+const staticCalendarData = [
+    {
+        subject: 'Bangla 1st Paper',
+        date: 'April 1, 2026',
+        time: '10:00 AM',
+        remaining: 'প্রায় ২ মাস এর মধ্যে'
+    },
+    {
+        subject: 'Bangla 2nd Paper',
+        date: 'April 3, 2026',
+        time: '10:00 AM',
+        remaining: 'প্রায় ২ মাস এর মধ্যে'
+    },
+    {
+        subject: 'English 1st Paper',
+        date: 'April 6, 2026',
+        time: '10:00 AM',
+        remaining: 'প্রায় ২ মাস এর মধ্যে'
+    }
+];
 
 
 export default function CalendarPage() {
   const [showMenu, setShowMenu] = useState(false);
-  const [year, setYear] = useState<number | null>(null);
-
-  useEffect(() => {
-    setYear(new Date().getFullYear());
-  }, []);
-
   const { user, isAdmin } = useUser();
-  const { data: calendar, isLoading } = useCollection<CalendarItem>(appwriteConfig.calendarCollectionId);
 
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },
@@ -155,61 +129,31 @@ export default function CalendarPage() {
         </div>
         
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-yellow-100">
-            {isLoading ? (
-                 <Table>
-                    <TableHeader className="bg-yellow-50/50">
-                        <TableRow className="border-b border-yellow-200">
-                            <TableHead className="w-[40%] py-4 px-6 font-tiro-bangla text-base text-accent">বিষয়</TableHead>
-                            <TableHead className="w-[30%] py-4 px-6 font-tiro-bangla text-base text-accent">তারিখ ও সময়</TableHead>
-                            <TableHead className="w-[30%] py-4 px-6 text-right font-tiro-bangla text-base text-accent">সময় বাকি</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {Array.from({ length: 5 }).map((_, i) => (
-                           <TableRow key={i}>
-                               <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                               <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                               <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                           </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            ) : calendar && calendar.length > 0 ? (
-                <Table>
-                    <TableHeader className="bg-yellow-50/50">
-                        <TableRow className="border-b border-yellow-200">
-                            <TableHead className="w-[40%] py-4 px-6 font-tiro-bangla text-base text-accent">বিষয়</TableHead>
-                            <TableHead className="w-[30%] py-4 px-6 font-tiro-bangla text-base text-accent">তারিখ ও সময়</TableHead>
-                            <TableHead className="w-[30%] py-4 px-6 text-right font-tiro-bangla text-base text-accent">সময় বাকি</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {calendar.map((item: CalendarItem) => (
-                           <TableRow key={item.$id}>
-                               <TableCell className="py-4 px-6 font-tiro-bangla font-bold">{item.subject || item.topic}</TableCell>
-                               <TableCell className="py-4 px-6 font-tiro-bangla">
-                                   <div className="flex flex-col">
-                                       <span>{item.date}</span>
-                                       <span className="text-xs text-gray-500">{item.time}</span>
-                                   </div>
-                               </TableCell>
-                               <TableCell className="py-4 px-6 text-right font-tiro-bangla text-gray-600">
-                                   <TimeRemaining dateTime={item.examDateTime || null} />
-                               </TableCell>
-                           </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            ) : (
-                <div className="text-center py-20 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-6 p-8">
-                    <div className="bg-yellow-100 p-6 rounded-full shadow-inner">
-                        <Lock className="w-16 h-16 text-accent drop-shadow-lg" />
-                    </div>
-                    <div className="space-y-3">
-                        <h3 className="text-2xl md:text-3xl font-bold font-tiro-bangla text-gray-800">বোর্ডের নির্দেশনা আসা মাত্রই এখানে ক্যালেন্ডার আপলোড বা আপডেট করা হবে</h3>
-                    </div>
-                </div>
-            )}
+            <Table>
+                <TableHeader className="bg-yellow-50/50">
+                    <TableRow className="border-b border-yellow-200">
+                        <TableHead className="w-[40%] py-4 px-6 font-tiro-bangla text-base text-accent">বিষয়</TableHead>
+                        <TableHead className="w-[30%] py-4 px-6 font-tiro-bangla text-base text-accent">তারিখ ও সময়</TableHead>
+                        <TableHead className="w-[30%] py-4 px-6 text-right font-tiro-bangla text-base text-accent">সময় বাকি</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {staticCalendarData.map((item, index) => (
+                       <TableRow key={index}>
+                           <TableCell className="py-4 px-6 font-tiro-bangla font-bold">{item.subject}</TableCell>
+                           <TableCell className="py-4 px-6 font-tiro-bangla">
+                               <div className="flex flex-col">
+                                   <span>{item.date}</span>
+                                   <span className="text-xs text-gray-500">{item.time}</span>
+                               </div>
+                           </TableCell>
+                           <TableCell className="py-4 px-6 text-right font-tiro-bangla text-gray-600">
+                               {item.remaining}
+                           </TableCell>
+                       </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
         </div>
       </main>
 
@@ -241,13 +185,11 @@ export default function CalendarPage() {
               </ul>
             </div>
           </div>
-          {year && (
-            <div className="mt-10 pt-8 border-t text-center">
-              <p className="text-sm text-gray-500 font-montserrat">
-                &copy; {year} SYLLABUSER BAIRE. All Rights Reserved.
-              </p>
-            </div>
-          )}
+          <div className="mt-10 pt-8 border-t text-center">
+            <p className="text-sm text-gray-500 font-montserrat">
+              &copy; 2026 SYLLABUSER BAIRE. All Rights Reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
