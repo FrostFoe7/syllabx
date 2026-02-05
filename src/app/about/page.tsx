@@ -144,17 +144,17 @@ export default function AboutPage() {
               <div className="bg-white p-5 rounded-3xl shadow-xl border border-yellow-100 hover:-translate-y-1 hover:shadow-2xl transition-all duration-500">
                 <div className="flex flex-col md:flex-row items-center gap-4">
                     <div className="w-20 h-20 rounded-2xl bg-yellow-400 overflow-hidden shadow-lg border-4 border-white shrink-0">
-                        <Image src="https://avatars.githubusercontent.com/u/175545919?v=4" alt="Frost Foe" width={80} height={80} className="w-full h-full object-cover" />
+                        <Image src="https://avatars.githubusercontent.com/u/175545919?v=4" alt="FrostFoe" width={80} height={80} className="w-full h-full object-cover" />
                     </div>
                     <div className="text-center md:text-left">
                         <span className="text-yellow-600 font-sans font-bold text-xs tracking-widest uppercase">Development Consultant</span>
-                        <h2 className="text-base font-black mt-1 mb-1 font-tiro-bangla">Frost Foe</h2>
+                        <h2 className="text-base font-black mt-1 mb-1 font-tiro-bangla">FrostFoe</h2>
                         <p className="text-gray-600 text-xs mb-2 leading-relaxed font-tiro-bangla">
                             প্ল্যাটফর্মের কারিগরি উন্নয়ন এবং ইনোভেশন নিশ্চিত করতে আমি ডেভেলপিং পরামর্শদাতা হিসেবে কাজ করছি। আমাদের লক্ষ্য একটি ত্রুটিমুক্ত ডিজিটাল লার্নিং এক্সপেরিয়েন্স তৈরি করা।
                         </p>
                         <div className="flex justify-center md:justify-start gap-1.5">
                             <a href="mailto:frostfoe@gmail.com" className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-red-500 hover:text-white transition-all"><Mail size={14} /></a>
-                             <a href="https.me/frostfoe" className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-blue-500 hover:text-white transition-all"><Send size={14} /></a>
+                             <a href="https://t.me/frostfoe" className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-blue-500 hover:text-white transition-all"><Send size={14} /></a>
                         </div>
                     </div>
                 </div>
