@@ -17,33 +17,39 @@ function TimeRemaining({ dateTime }: { dateTime: string | null }) {
     const [timeLeft, setTimeLeft] = useState<string>('...');
 
     useEffect(() => {
-        if (!dateTime) return;
+        if (!dateTime) {
+            setTimeLeft('সময় নির্ধারিত হয়নি');
+            return;
+        }
 
         const targetDate = new Date(dateTime);
-        
+        let intervalId: NodeJS.Timeout;
+
         const update = () => {
             if (isAfter(new Date(), targetDate)) {
                 setTimeLeft('পরীক্ষা শেষ');
-                return true;
+                if (intervalId) clearInterval(intervalId);
+                return true; // Indicates the countdown is finished
             } else {
                 setTimeLeft(formatDistanceToNow(targetDate, { locale: bn, addSuffix: true }));
                 return false;
             }
         };
         
-        if (update()) return;
+        if (!update()) {
+             intervalId = setInterval(() => {
+                if (update()) clearInterval(intervalId);
+            }, 60000); // Update every minute
+        }
 
-        const interval = setInterval(() => {
-            if (update()) clearInterval(interval);
-        }, 60000);
-
-        return () => clearInterval(interval);
+        return () => {
+            if(intervalId) clearInterval(intervalId);
+        };
     }, [dateTime]);
-
-    if (!dateTime) return <span>সময় নির্ধারিত হয়নি</span>;
 
     return <span>{timeLeft}</span>;
 }
+
 
 export default function CalendarPage() {
   const [showMenu, setShowMenu] = useState(false);
