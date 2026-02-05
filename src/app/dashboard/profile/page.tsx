@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Models } from 'appwrite';
 import { Course, UserData } from '@/types';
 
 const profileFormSchema = z.object({
@@ -40,7 +39,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 export default function ProfilePage() {
   const { user, profile: globalProfile, isLoading: isUserLoading, logout, refreshUser } = useUser();
-  const { courses: allCourses, isLoading: isCoursesLoading } = useGlobalData();
+  const { courses: allCourses } = useGlobalData();
   const account = useAccount();
   const databases = useDatabases();
   const router = useRouter();

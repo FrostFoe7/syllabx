@@ -58,9 +58,14 @@ export default function ResultDetailPage() {
                 studentName: student?.name || 'Unknown',
             };
         })
-        .sort((a, b) => b.marks - a.marks);
+        .sort((a, b) => {
+            if (b.marks !== a.marks) {
+                return b.marks - a.marks;
+            }
+            return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
+        });
     
-    const rank = validResults.findIndex((r: any) => r.userId === user.$id) + 1;
+    const rank = validResults.findIndex((r) => r.userId === user.$id) + 1;
 
     return { meritList: validResults, userRank: rank > 0 ? rank : null };
   }, [allResults, allStudents, exam, user]);

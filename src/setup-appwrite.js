@@ -161,7 +161,7 @@ async function setup() {
     await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'email', 100, false);
     await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'roll', 50, false);
     await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'institution', 200, false);
-    await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'enrolledCourses', 100, false, true);
+    await createAttribute(DATABASE_ID, USERS_COLLECTION_ID, 'string', 'enrolledCourses', 255, false, true);
 
     // 2.5 Create Admins Collection
     const adminPermissions = [
@@ -279,6 +279,8 @@ async function setup() {
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'courseId', 50, true);
     await createAttribute(DATABASE_ID, EXAMS_COLLECTION_ID, 'string', 'courseName', 255, true);
 
+    await createIndex(DATABASE_ID, EXAMS_COLLECTION_ID, 'courseId_index', 'key', ['courseId']);
+
     // 4. Create Questions Collection
     await getOrCreateCollection(QUESTIONS_COLLECTION_ID, 'Questions', [
         Permission.read(Role.any()),
@@ -310,7 +312,7 @@ async function setup() {
         Permission.read(Role.any()),
         Permission.write(Role.team(ADMIN_TEAM_ID)),
     ]);
-    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'title', 255, true);
+    await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'title', 500, true);
     await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'slug', 255, true);
     await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'price', 50, true);
     await createAttribute(DATABASE_ID, COURSES_COLLECTION_ID, 'string', 'description', 1000, true);
@@ -332,6 +334,8 @@ async function setup() {
     await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'date', 100, true);
     await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'topic', 255, true);
     await createAttribute(DATABASE_ID, ROUTINES_COLLECTION_ID, 'string', 'time', 100, false);
+
+    await createIndex(DATABASE_ID, ROUTINES_COLLECTION_ID, 'courseId_index', 'key', ['courseId']);
 
     // 8. Create Results Collection
     await getOrCreateCollection(RESULTS_COLLECTION_ID, 'Results', [
@@ -359,6 +363,7 @@ async function setup() {
         Permission.write(Role.team(ADMIN_TEAM_ID)),
     ]);
     await createAttribute(DATABASE_ID, CALENDAR_COLLECTION_ID, 'string', 'subject', 255, true);
+    await createAttribute(DATABASE_ID, CALENDAR_COLLECTION_ID, 'string', 'topic', 255, false); // Added topic attribute
     await createAttribute(DATABASE_ID, CALENDAR_COLLECTION_ID, 'string', 'date', 100, true);
     await createAttribute(DATABASE_ID, CALENDAR_COLLECTION_ID, 'string', 'time', 100, false);
     await createAttribute(DATABASE_ID, CALENDAR_COLLECTION_ID, 'datetime', 'examDateTime', null, false);

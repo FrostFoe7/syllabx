@@ -27,6 +27,10 @@ interface StudentDoc extends Models.Document {
     name: string;
 }
 
+interface MeritListResult extends ResultDoc {
+    studentName: string;
+}
+
 export default function PrintMeritListPage() {
     const params = useParams();
     const examId = params.examId as string;
@@ -61,7 +65,12 @@ export default function PrintMeritListPage() {
                     studentName: student?.name || 'Unknown Student',
                 };
             })
-            .sort((a, b) => b.marks - a.marks);
+            .sort((a, b) => {
+                if (b.marks !== a.marks) {
+                    return b.marks - a.marks;
+                }
+                return new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
+            });
     }, [results, students, exam]);
 
     const isLoading = examLoading || resultsLoading || studentsLoading;
@@ -110,7 +119,7 @@ export default function PrintMeritListPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {meritList.map((result: any, index: number) => (
+                        {meritList.map((result: MeritListResult, index: number) => (
                             <tr key={result.$id} className="odd:bg-white even:bg-gray-50">
                                 <td className="p-2 border font-bold">{index + 1}</td>
                                 <td className="p-2 border">{result.studentName}</td>

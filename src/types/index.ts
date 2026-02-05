@@ -72,6 +72,7 @@ export interface Category extends Models.Document {
 
 export interface Routine extends Models.Document {
     courseId: string;
+    courseName?: string;
     date: string;
     topic: string;
     time?: string;

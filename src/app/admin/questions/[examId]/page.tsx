@@ -135,12 +135,21 @@ export default function EditExamPage(props: { params: Promise<{ examId: string }
             });
 
         } catch (error) {
-            console.error(error);
-            toast({
-                variant: 'destructive',
-                title: 'Error fetching exam',
-                description: 'Could not load exam details.'
-            });
+            const appwriteError = error as { code?: number; message?: string };
+            if (appwriteError.code === 404) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Exam Not Found',
+                    description: 'The requested exam does not exist.'
+                });
+            } else {
+                console.error(error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Error fetching exam',
+                    description: 'Could not load exam details.'
+                });
+            }
             router.push('/admin/questions');
         } finally {
             setIsInitialLoading(false);

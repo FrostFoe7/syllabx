@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useUser, useCollection, appwriteConfig } from '@/appwrite';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Calendar, CheckCircle } from 'lucide-react';
-import { format, isWithinInterval, isBefore, isAfter, parseISO } from 'date-fns';
+import { format, isBefore, isAfter, parseISO } from 'date-fns';
 import { Exam, UserData } from '@/types';
 import { isUserEnrolled } from '@/lib/enrollment';
 

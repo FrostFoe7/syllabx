@@ -13,11 +13,19 @@ export function useDoc<T extends Models.Document>(collectionId: string, document
         queryKey,
         queryFn: async () => {
             if (!documentId || !collectionId) return null;
-            return await databases.getDocument<T>(
-                appwriteConfig.databaseId,
-                collectionId,
-                documentId
-            );
+            try {
+                return await databases.getDocument<T>(
+                    appwriteConfig.databaseId,
+                    collectionId,
+                    documentId
+                );
+            } catch (error) {
+                const appwriteError = error as { code?: number };
+                if (appwriteError.code === 404) {
+                    return null;
+                }
+                throw error;
+            }
         },
         enabled: !!documentId && !!collectionId,
     });

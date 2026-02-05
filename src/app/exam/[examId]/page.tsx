@@ -3,16 +3,16 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser, useDoc, useCollection, appwriteConfig, useDatabases } from '@/appwrite';
-import { Models, Query, ID } from 'appwrite';
+import { Query, ID } from 'appwrite';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Clock, AlertTriangle, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Exam, Question, UserData, Result } from '@/types';
+import { Exam, Question, UserData } from '@/types';
 import { isUserEnrolled } from '@/lib/enrollment';
-import { parseISO, isAfter, isBefore, differenceInSeconds } from 'date-fns';
+import { parseISO, isAfter, isBefore, differenceInSeconds, format, isWithinInterval } from 'date-fns';
 
 const QuestionNavigation = ({ questions, onQuestionSelect, currentQuestionIndex }: { questions: Question[], onQuestionSelect: (index: number) => void, currentQuestionIndex: number }) => {
     return (

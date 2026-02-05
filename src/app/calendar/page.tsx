@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { UserRound, Menu, Send, Lock, Home as HomeIcon, BookOpen, Info, Calendar as CalendarIcon } from 'lucide-react';
 import { useUser, useCollection, appwriteConfig } from '@/appwrite';
-import { Models } from 'appwrite';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -72,6 +71,19 @@ export default function CalendarPage() {
           <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Logo" width={150} height={150} quality={100} className="h-14 w-auto" />
         </Link>
         
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-6">
+            {navLinks.filter(link => !['Dashboard', 'Admin Panel', 'Login'].includes(link.text) && !link.href.includes('dashboard') && !link.href.includes('login')).map((link) => (
+                <Link 
+                    key={link.href} 
+                    href={link.href}
+                    className="text-gray-700 hover:text-primary font-tiro-bangla text-base font-medium transition-colors"
+                >
+                    {link.text}
+                </Link>
+            ))}
+        </nav>
+
         <div className="flex items-center gap-4">
           {!user ? (
             <Link href="/login" className="no-underline bg-black text-white px-4 py-2 rounded-full text-xs font-bold flex items-center gap-2 uppercase hover:bg-gray-800 transition-all shadow-md">
