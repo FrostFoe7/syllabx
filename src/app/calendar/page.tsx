@@ -47,7 +47,12 @@ function TimeRemaining({ dateTime }: { dateTime: string | null }) {
 
 export default function CalendarPage() {
   const [showMenu, setShowMenu] = useState(false);
-  const [year] = useState(() => new Date().getFullYear());
+  const [year, setYear] = useState<number | null>(null);
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
+
   const { user, isAdmin } = useUser();
   const { data: calendar, isLoading } = useCollection<CalendarItem>(appwriteConfig.calendarCollectionId);
 
@@ -60,7 +65,7 @@ export default function CalendarPage() {
   ];
 
   const heroData = {
-    subtitle: 'সহজ ব্যাখ্যা আর আধুনিক টেকনিকের মাধ্যমে আমরা তোমার সিলেবাসের ভয় দূর করবো ইন้าআল্লাহ্‌।'
+    subtitle: 'সহজ ব্যাখ্যা আর আধুনিক টেকনিকের মাধ্যমে আমরা তোমার সিলেবাসের ভয় দূর করবো ইনশাআল্লাহ্‌।'
   };
 
   return (
@@ -68,7 +73,7 @@ export default function CalendarPage() {
       {/* Header */}
       <header className="bg-white/95 px-2 lg:px-6 py-3 flex justify-between items-center sticky top-0 z-20 shadow-sm">
         <Link href="/">
-          <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Logo" width={150} height={150} quality={100} className="h-14 w-auto" />
+          <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Logo" width={200} height={56} quality={100} className="h-14 w-auto" />
         </Link>
         
         {/* Desktop Navigation */}
@@ -135,16 +140,6 @@ export default function CalendarPage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12">
         <div className="text-center mb-12 relative">
-            {!isLoading && (!calendar || calendar.length === 0) && (
-                <div className="flex flex-col items-center mb-6">
-                    <div className="bg-white p-3 rounded-full shadow-md border border-yellow-200 animate-bounce mb-3">
-                        <Lock className="w-8 h-8 text-accent" />
-                    </div>
-                    <p className="bg-accent/10 text-accent px-4 py-1.5 rounded-full text-sm font-bold font-tiro-bangla border border-accent/20">
-                        বোর্ডের নির্দেশনা আসা না পর্যন্ত ক্যালেন্ডার দেখানো হবে না
-                    </p>
-                </div>
-            )}
             <h1 className="text-3xl md:text-4xl font-black mb-3 leading-tight font-tiro-bangla">
                 <span className="font-montserrat">HSC</span> পরীক্ষার <span className="text-accent">সময়সূচি</span>
             </h1>
@@ -200,35 +195,13 @@ export default function CalendarPage() {
                     </TableBody>
                 </Table>
             ) : (
-                <div className="relative">
-                    <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-10 flex flex-col items-center justify-center gap-6 p-8 text-center">
-                        <div className="bg-yellow-100 p-6 rounded-full shadow-inner animate-pulse">
-                            <Lock className="w-16 h-16 text-accent drop-shadow-lg" />
-                        </div>
-                        <div className="space-y-3">
-                            <h3 className="text-2xl md:text-3xl font-bold font-tiro-bangla text-gray-800">বোর্ডের নির্দেশনা আসা না পর্যন্ত ক্যালেন্ডার দেখানো হবে না</h3>
-                            <p className="text-lg text-gray-600 font-tiro-bangla max-w-lg mx-auto">বোর্ডের নির্দেশনা আসা মাত্রই এইখানে ক্যালেন্ডার আপলোড বা আপডেট করা হবে।</p>
-                        </div>
+                <div className="text-center py-20 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-6 p-8">
+                    <div className="bg-yellow-100 p-6 rounded-full shadow-inner">
+                        <Lock className="w-16 h-16 text-accent drop-shadow-lg" />
                     </div>
-                    
-                    <Table>
-                        <TableHeader className="bg-yellow-50/50 opacity-50">
-                            <TableRow className="border-b border-yellow-200">
-                                <TableHead className="w-[40%] py-4 px-6 font-tiro-bangla text-base text-accent">বিষয়</TableHead>
-                                <TableHead className="w-[30%] py-4 px-6 font-tiro-bangla text-base text-accent">তারিখ ও সময়</TableHead>
-                                <TableHead className="w-[30%] py-4 px-6 text-right font-tiro-bangla text-base text-accent">সময় বাকি</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody className="opacity-40">
-                            {Array.from({ length: 6 }).map((_, i) => (
-                               <TableRow key={i}>
-                                   <TableCell><Skeleton className="h-6 w-full bg-gray-200" /></TableCell>
-                                   <TableCell><Skeleton className="h-6 w-full bg-gray-200" /></TableCell>
-                                   <TableCell><Skeleton className="h-6 w-full bg-gray-200" /></TableCell>
-                               </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    <div className="space-y-3">
+                        <h3 className="text-2xl md:text-3xl font-bold font-tiro-bangla text-gray-800">বোর্ডের নির্দেশনা আসা মাত্রই এখানে ক্যালেন্ডার আপলোড বা আপডেট করা হবে</h3>
+                    </div>
                 </div>
             )}
         </div>
@@ -240,7 +213,7 @@ export default function CalendarPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <Link href="/">
-                <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Footer Logo" width={200} height={200} quality={100} />
+                <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Footer Logo" width={200} height={56} quality={100} />
               </Link>
               <p className="text-gray-600 font-tiro-bangla text-sm max-w-xs">
                 {heroData.subtitle}
@@ -262,15 +235,15 @@ export default function CalendarPage() {
               </ul>
             </div>
           </div>
-          <div className="mt-10 pt-8 border-t text-center">
-            <p className="text-sm text-gray-500 font-montserrat">
-              &copy; {year} SYLLABUSER BAIRE. All Rights Reserved.
-            </p>
-          </div>
+          {year && (
+            <div className="mt-10 pt-8 border-t text-center">
+              <p className="text-sm text-gray-500 font-montserrat">
+                &copy; {year} SYLLABUSER BAIRE. All Rights Reserved.
+              </p>
+            </div>
+          )}
         </div>
       </footer>
     </div>
   );
 }
-
-    
