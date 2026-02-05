@@ -3,33 +3,10 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { UserRound, Menu, Send, Home as HomeIcon, BookOpen, Info, Calendar as CalendarIcon } from 'lucide-react';
+import { UserRound, Menu, Send, Home as HomeIcon, BookOpen, Info, Calendar as CalendarIcon, Lock } from 'lucide-react';
 import { useUser } from '@/appwrite';
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-
-// Static data as requested by the user
-const staticCalendarData = [
-    {
-        subject: 'Bangla 1st Paper',
-        date: 'April 1, 2026',
-        time: '10:00 AM',
-        remaining: 'প্রায় ২ মাস এর মধ্যে'
-    },
-    {
-        subject: 'Bangla 2nd Paper',
-        date: 'April 3, 2026',
-        time: '10:00 AM',
-        remaining: 'প্রায় ২ মাস এর মধ্যে'
-    },
-    {
-        subject: 'English 1st Paper',
-        date: 'April 6, 2026',
-        time: '10:00 AM',
-        remaining: 'প্রায় ২ মাস এর মধ্যে'
-    }
-];
 
 
 export default function CalendarPage() {
@@ -128,32 +105,16 @@ export default function CalendarPage() {
             </p>
         </div>
         
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-yellow-100">
-            <Table>
-                <TableHeader className="bg-yellow-50/50">
-                    <TableRow className="border-b border-yellow-200">
-                        <TableHead className="w-[40%] py-4 px-6 font-tiro-bangla text-base text-accent">বিষয়</TableHead>
-                        <TableHead className="w-[30%] py-4 px-6 font-tiro-bangla text-base text-accent">তারিখ ও সময়</TableHead>
-                        <TableHead className="w-[30%] py-4 px-6 text-right font-tiro-bangla text-base text-accent">সময় বাকি</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {staticCalendarData.map((item, index) => (
-                       <TableRow key={index}>
-                           <TableCell className="py-4 px-6 font-tiro-bangla font-bold">{item.subject}</TableCell>
-                           <TableCell className="py-4 px-6 font-tiro-bangla">
-                               <div className="flex flex-col">
-                                   <span>{item.date}</span>
-                                   <span className="text-xs text-gray-500">{item.time}</span>
-                               </div>
-                           </TableCell>
-                           <TableCell className="py-4 px-6 text-right font-tiro-bangla text-gray-600">
-                               {item.remaining}
-                           </TableCell>
-                       </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-yellow-100 p-12 text-center">
+          <div className="max-w-md mx-auto">
+              <div className="bg-yellow-100 p-4 rounded-full inline-block mb-6">
+                  <Lock className="h-12 w-12 text-accent" />
+              </div>
+              <h2 className="text-2xl font-bold font-tiro-bangla mb-4">রুটিন শীঘ্রই আসছে</h2>
+              <p className="text-gray-600 font-tiro-bangla">
+                  বোর্ড থেকে চূড়ান্ত পরীক্ষার রুটিন প্রকাশিত হওয়ার সাথে সাথেই এখানে সম্পূর্ণ ক্যালেন্ডার আপডেট করা হবে।
+              </p>
+          </div>
         </div>
       </main>
 
