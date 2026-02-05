@@ -134,7 +134,17 @@ export default function CalendarPage() {
       
       {/* Main Content */}
       <main className="container mx-auto px-6 py-12">
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 relative">
+            {!isLoading && (!calendar || calendar.length === 0) && (
+                <div className="flex flex-col items-center mb-6">
+                    <div className="bg-white p-3 rounded-full shadow-md border border-yellow-200 animate-bounce mb-3">
+                        <Lock className="w-8 h-8 text-accent" />
+                    </div>
+                    <p className="bg-accent/10 text-accent px-4 py-1.5 rounded-full text-sm font-bold font-tiro-bangla border border-accent/20">
+                        বোর্ডের নির্দেশনা আসা না পর্যন্ত ক্যালেন্ডার দেখানো হবে না
+                    </p>
+                </div>
+            )}
             <h1 className="text-3xl md:text-4xl font-black mb-3 leading-tight font-tiro-bangla">
                 <span className="font-montserrat">HSC</span> পরীক্ষার <span className="text-accent">সময়সূচি</span>
             </h1>
@@ -191,10 +201,14 @@ export default function CalendarPage() {
                 </Table>
             ) : (
                 <div className="relative">
-                    <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-4 p-8 text-center">
-                        <Lock className="w-16 h-16 text-yellow-400 drop-shadow-lg" />
-                        <h3 className="text-xl font-bold font-tiro-bangla text-gray-700">রুটিন এখনো প্রকাশিত হয়নি</h3>
-                        <p className="text-muted-foreground font-tiro-bangla max-w-sm">বোর্ড থেকে চূড়ান্ত পরীক্ষার রুটিন প্রকাশিত হওয়ার সাথে সাথেই এখানে সম্পূর্ণ ক্যালেন্ডার আপডেট করা হবে। অনুগ্রহ করে অপেক্ষা করুন।</p>
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-md z-10 flex flex-col items-center justify-center gap-6 p-8 text-center">
+                        <div className="bg-yellow-100 p-6 rounded-full shadow-inner animate-pulse">
+                            <Lock className="w-16 h-16 text-accent drop-shadow-lg" />
+                        </div>
+                        <div className="space-y-3">
+                            <h3 className="text-2xl md:text-3xl font-bold font-tiro-bangla text-gray-800">বোর্ডের নির্দেশনা আসা না পর্যন্ত ক্যালেন্ডার দেখানো হবে না</h3>
+                            <p className="text-lg text-gray-600 font-tiro-bangla max-w-lg mx-auto">বোর্ডের নির্দেশনা আসা মাত্রই এইখানে ক্যালেন্ডার আপলোড বা আপডেট করা হবে।</p>
+                        </div>
                     </div>
                     
                     <Table>
@@ -205,8 +219,8 @@ export default function CalendarPage() {
                                 <TableHead className="w-[30%] py-4 px-6 text-right font-tiro-bangla text-base text-accent">সময় বাকি</TableHead>
                             </TableRow>
                         </TableHeader>
-                        <TableBody className="opacity-50">
-                            {Array.from({ length: 5 }).map((_, i) => (
+                        <TableBody className="opacity-40">
+                            {Array.from({ length: 6 }).map((_, i) => (
                                <TableRow key={i}>
                                    <TableCell><Skeleton className="h-6 w-full bg-gray-200" /></TableCell>
                                    <TableCell><Skeleton className="h-6 w-full bg-gray-200" /></TableCell>
