@@ -24,10 +24,14 @@ export default function CourseDetailPage() {
   
   const course = courses?.[0];
 
-  const { data: routine } = useCollection<Routine>(
-      appwriteConfig.routinesCollectionId,
-      [Query.equal('courseId', courseId)]
+  const { data: allRoutines } = useCollection<Routine>(
+      course ? appwriteConfig.routinesCollectionId : null,
+      [Query.limit(500), Query.orderDesc('$createdAt')]
   );
+
+  const routine = allRoutines?.filter(r => 
+    r.courseId === course?.$id || r.courseId === course?.slug
+  ) || [];
 
   // Header and menu state
   const [showMenu, setShowMenu] = useState(false);

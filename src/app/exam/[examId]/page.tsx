@@ -59,7 +59,10 @@ export default function ExamEnginePage() {
   const { data: exam, isLoading: examLoading } = useDoc<Exam>(appwriteConfig.examsCollectionId, examId);
   const { data: questions, isLoading: questionsLoading } = useCollection<Question>(
     appwriteConfig.questionsCollectionId,
-    [Query.equal('examId', examId)]
+    [
+        Query.equal('examId', examId),
+        Query.limit(500)
+    ]
   );
   
   const userData = globalProfile as UserData | null;

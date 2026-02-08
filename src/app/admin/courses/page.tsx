@@ -2,17 +2,38 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useCollection, appwriteConfig } from '@/appwrite';
+import { useCollection, useDatabases, appwriteConfig } from '@/appwrite';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CheckCircle2, Plus, Pencil } from 'lucide-react';
+import { CheckCircle2, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Course } from '@/types';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminCoursesPage() {
-  const { data: dbCourses, isLoading } = useCollection<Course>(appwriteConfig.coursesCollectionId);
+  const { data: dbCourses, isLoading, mutate: refreshCourses } = useCollection<Course>(appwriteConfig.coursesCollectionId, [Query.limit(100)]);
+  const databases = useDatabases();
+  const { toast } = useToast();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const displayCourses = dbCourses && dbCourses.length > 0 ? dbCourses : [];
+
+  const handleDelete = async (courseId: string) => {
+    if (!confirm('Are you sure you want to delete this course? This action cannot be undone.')) return;
+    
+    setDeletingId(courseId);
+    try {
+        await databases.deleteDocument(appwriteConfig.databaseId, appwriteConfig.coursesCollectionId, courseId);
+        toast({ title: 'Success', description: 'Course deleted successfully.' });
+        refreshCourses();
+    } catch (error) {
+        const err = error as { message?: string };
+        toast({ variant: 'destructive', title: 'Error', description: err.message || 'Failed to delete course.' });
+    } finally {
+        setDeletingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -53,12 +74,24 @@ export default function AdminCoursesPage() {
                         <div className="flex items-center gap-1 text-xs text-green-600">
                             <CheckCircle2 size={14} /> {course.disabled ? 'Disabled' : 'Active'}
                         </div>
-                        <Link href={`/admin/courses/${course.$id}`}>
-                            <Button variant="ghost" size="sm" className="gap-1">
-                                <Pencil size={14} />
-                                Edit
+                        <div className="flex gap-2">
+                            <Link href={`/admin/courses/${course.$id}`}>
+                                <Button variant="ghost" size="sm" className="gap-1">
+                                    <Pencil size={14} />
+                                    Edit
+                                </Button>
+                            </Link>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDelete(course.$id)}
+                                disabled={deletingId === course.$id}
+                            >
+                                {deletingId === course.$id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                Delete
                             </Button>
-                        </Link>
+                        </div>
                     </CardFooter>
                 </Card>
             ))}

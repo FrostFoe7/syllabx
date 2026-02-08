@@ -23,7 +23,10 @@ export default function ResultDetailPage() {
 
   const { data: questions, isLoading: questionsLoading } = useCollection<QuestionDoc>(
     appwriteConfig.questionsCollectionId,
-    examId ? [Query.equal('examId', examId)] : []
+    examId ? [
+        Query.equal('examId', examId),
+        Query.limit(500)
+    ] : []
   );
   
   const { data: exam, isLoading: examLoading } = useDoc<Exam>(appwriteConfig.examsCollectionId, examId || '');

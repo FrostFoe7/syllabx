@@ -57,10 +57,15 @@ interface QuestionInput {
 
 export default function AdminQuestionsPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>('all');
   const { toast } = useToast();
   const databases = useDatabases();
   const { data: existingExams, isLoading: examsLoading } = useCollection<Exam>(appwriteConfig.examsCollectionId);
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(appwriteConfig.coursesCollectionId);
+
+  const filteredExams = selectedCourseFilter === 'all' 
+    ? existingExams 
+    : existingExams?.filter(exam => exam.courseId === selectedCourseFilter);
 
   const form = useForm<ExamFormValues>({
     resolver: zodResolver(ExamFormSchema),
@@ -466,18 +471,35 @@ export default function AdminQuestionsPage() {
 
         <div className="lg:col-span-4 space-y-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>Uploaded Exams ({existingExams?.length || 0})</CardTitle>
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-xl">Uploaded Exams</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-bold uppercase text-muted-foreground">Filter by Course</label>
+                        <Select value={selectedCourseFilter} onValueChange={setSelectedCourseFilter}>
+                            <SelectTrigger className="h-9 text-xs">
+                                <SelectValue placeholder="All Courses" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Courses</SelectItem>
+                                {courses?.map((course: Course) => (
+                                    <SelectItem key={course.$id} value={course.$id}>
+                                        {course.title}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     {examsLoading ? (
                         <div className="space-y-2">
                             <Skeleton className="h-12 w-full" />
                             <Skeleton className="h-12 w-full" />
                         </div>
-                    ) : existingExams && existingExams.length > 0 ? (
+                    ) : filteredExams && filteredExams.length > 0 ? (
                         <div className="space-y-4">
-                            {existingExams.map((exam: Exam) => (
+                            {filteredExams.map((exam: Exam) => (
                                 <div key={exam.$id} className="flex justify-between items-center p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                                     <div className="overflow-hidden">
                                         <h4 className="font-bold truncate text-sm">{exam.title}</h4>

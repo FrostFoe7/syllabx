@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { useCollection, appwriteConfig } from '@/appwrite';
+import { useCollection, useDatabases, appwriteConfig } from '@/appwrite';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BarChart3, User as UserIcon, BookText, FileQuestion, FileText, Printer } from 'lucide-react';
+import { BarChart3, User as UserIcon, BookText, FileQuestion, FileText, Printer, Trash2, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Query } from 'appwrite';
@@ -11,17 +11,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Result, UserData as Student, Exam, Course } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminResultsPage() {
   const [selectedCourseId, setSelectedCourseId] = React.useState<string | null>(null);
   const [selectedExamId, setSelectedExamId] = React.useState<string | null>(null);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
+  const databases = useDatabases();
+  const { toast } = useToast();
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(appwriteConfig.coursesCollectionId);
   const { data: exams, isLoading: examsLoading } = useCollection<Exam>(appwriteConfig.examsCollectionId, selectedCourseId ? [Query.equal('courseId', selectedCourseId)] : []);
-  const { data: results, isLoading: resultsLoading } = useCollection<Result>(appwriteConfig.resultsCollectionId, selectedExamId ? [Query.equal('examId', selectedExamId)] : []);
+  const { data: results, isLoading: resultsLoading, mutate: refreshResults } = useCollection<Result>(appwriteConfig.resultsCollectionId, selectedExamId ? [Query.equal('examId', selectedExamId)] : []);
   const { data: students, isLoading: studentsLoading } = useCollection<Student>(appwriteConfig.usersCollectionId);
 
   const isLoading = coursesLoading || examsLoading || resultsLoading || studentsLoading;
+
+  const handleDeleteResult = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this result? This cannot be undone.')) return;
+    setDeletingId(id);
+    try {
+        await databases.deleteDocument(appwriteConfig.databaseId, appwriteConfig.resultsCollectionId, id);
+        toast({ title: 'Result deleted' });
+        refreshResults();
+    } catch (error) {
+        const err = error as { message?: string };
+        toast({ variant: 'destructive', title: 'Delete failed', description: err.message });
+    } finally {
+        setDeletingId(null);
+    }
+  };
 
   const getStudentName = (id: string) => students?.find((s: Student) => s.$id === id)?.name || 'Unknown Student';
   const getExamTitle = (id: string) => exams?.find((e: Exam) => e.$id === id)?.title || 'Unknown Exam';
@@ -144,6 +163,16 @@ export default function AdminResultsPage() {
                       <p className="text-xs text-muted-foreground uppercase">Date</p>
                       <p className="text-sm">{format(new Date(result.submittedAt), 'PP')}</p>
                     </div>
+                    
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeleteResult(result.$id)}
+                        disabled={deletingId === result.$id}
+                    >
+                        {deletingId === result.$id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

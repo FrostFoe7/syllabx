@@ -12,7 +12,7 @@ export const appwriteConfig = {
     routinesCollectionId: process.env.NEXT_PUBLIC_APPWRITE_ROUTINES_COLLECTION_ID || 'routines',
     resultsCollectionId: process.env.NEXT_PUBLIC_APPWRITE_RESULTS_COLLECTION_ID || 'results',
     calendarCollectionId: process.env.NEXT_PUBLIC_APPWRITE_CALENDAR_COLLECTION_ID || 'calendar',
-    adminsCollectionId: 'admins',
+    adminsCollectionId: process.env.NEXT_PUBLIC_APPWRITE_ADMINS_COLLECTION_ID || 'admins',
     bucketId: 'main_storage',
 };
 

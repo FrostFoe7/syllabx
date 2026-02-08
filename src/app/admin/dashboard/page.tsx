@@ -9,13 +9,13 @@ import { UserData, Result } from '@/types';
 export default function AdminPage() {
   const { user } = useUser();
   const { exams, isLoading: loadingExams } = useGlobalData();
-  const { data: students, isLoading: loadingStudents } = useCollection<UserData>(appwriteConfig.usersCollectionId);
-  const { data: results, isLoading: loadingResults } = useCollection<Result>(appwriteConfig.resultsCollectionId);
+  const { total: studentsCount, isLoading: loadingStudents } = useCollection<UserData>(appwriteConfig.usersCollectionId);
+  const { total: resultsCount, isLoading: loadingResults } = useCollection<Result>(appwriteConfig.resultsCollectionId);
 
   const stats = [
-    { title: 'মোট ছাত্র', value: students?.length || 0, icon: Users, color: 'text-blue-600', loading: loadingStudents },
+    { title: 'মোট ছাত্র', value: studentsCount, icon: Users, color: 'text-blue-600', loading: loadingStudents },
     { title: 'মোট পরীক্ষা', value: exams?.length || 0, icon: BookOpen, color: 'text-green-600', loading: loadingExams },
-    { title: 'মোট ফলাফল', value: results?.length || 0, icon: BarChart3, color: 'text-purple-600', loading: loadingResults },
+    { title: 'মোট ফলাফল', value: resultsCount, icon: BarChart3, color: 'text-purple-600', loading: loadingResults },
   ];
 
   return (

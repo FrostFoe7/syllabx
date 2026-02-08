@@ -106,7 +106,7 @@ export default function EditExamPage(props: { params: Promise<{ examId: string }
                 appwriteConfig.questionsCollectionId,
                 [
                     Query.equal('examId', examId),
-                    Query.limit(200) 
+                    Query.limit(500) 
                 ]
             );
 

@@ -32,6 +32,30 @@ export default function AdminStudentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+  const { toast } = useToast();
+  const databases = useDatabases();
+
+  const handleDeleteStudent = async (studentId: string) => {
+    if (!confirm('Are you sure you want to delete this student record? This action only removes the database entry, not the Appwrite Auth user.')) return;
+    
+    setIsDeleting(studentId);
+    try {
+        await databases.deleteDocument(
+            appwriteConfig.databaseId,
+            appwriteConfig.usersCollectionId,
+            studentId
+        );
+        toast({ title: 'Student record deleted successfully' });
+        refreshStudents();
+    } catch (error) {
+        const err = error as { message?: string };
+        toast({ variant: 'destructive', title: 'Delete failed', description: err.message });
+    } finally {
+        setIsDeleting(null);
+    }
+  };
 
   const filteredStudents = useMemo(() => {
     return students?.filter((student: Student) => 
@@ -98,7 +122,7 @@ export default function AdminStudentsPage() {
                                    {student.enrolledCourses?.length || 0} Courses
                                </span>
                            </div>
-                           <div className="text-right">
+                           <div className="text-right flex justify-end gap-2">
                                <Button 
                                     size="sm" 
                                     variant="outline"
@@ -109,6 +133,16 @@ export default function AdminStudentsPage() {
                                 >
                                    Manage Access
                                </Button>
+                               <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleDeleteStudent(student.$id)}
+                                    disabled={isDeleting === student.$id}
+                                >
+                                    {isDeleting === student.$id ? <Loader2 size={14} className="animate-spin" /> : <Users size={14} className="mr-1" />}
+                                    Delete
+                                </Button>
                            </div>
                        </div>
                    ))}
