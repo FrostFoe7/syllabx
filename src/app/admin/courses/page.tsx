@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useCollection, useDatabases, appwriteConfig } from '@/appwrite';
+import { Query } from 'appwrite';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CheckCircle2, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';

@@ -48,6 +48,46 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Edit, Trash2, Loader2, CalendarPlus } from 'lucide-react';
 
+const bengaliToEnglishDigits = (str: string) => {
+  const digits: { [key: string]: string } = {
+    '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+  };
+  return str.replace(/[০-৯]/g, (w) => digits[w]);
+};
+
+const bengaliMonths: { [key: string]: number } = {
+  'জানুয়ারি': 0,
+  'ফেব্রুয়ারি': 1,
+  'মার্চ': 2,
+  'এপ্রিল': 3,
+  'মে': 4,
+  'জুন': 5,
+  'জুলাই': 6,
+  'আগস্ট': 7,
+  'সেপ্টেম্বর': 8,
+  'অক্টোবর': 9,
+  'নভেম্বর': 10,
+  'ডিসেম্বর': 11,
+};
+
+const parseBengaliDate = (dateStr: string) => {
+  try {
+    const normalizedDate = dateStr.replace(',', '');
+    const parts = normalizedDate.split(/\s+/);
+    if (parts.length < 2) return new Date(0);
+    const day = parseInt(bengaliToEnglishDigits(parts[0]));
+    const monthName = parts[1];
+    const month = bengaliMonths[monthName] !== undefined ? bengaliMonths[monthName] : 0;
+    let year = new Date().getFullYear();
+    if (parts.length >= 3) {
+      year = parseInt(bengaliToEnglishDigits(parts[2]));
+    }
+    return new Date(year, month, day);
+  } catch (e) {
+    return new Date(0);
+  }
+};
+
 interface Routine extends Models.Document {
   courseId: string;
   courseName?: string;
@@ -77,7 +117,11 @@ export default function AdminRoutinesPage() {
 
   const { toast } = useToast();
   const databases = useDatabases();
-  const { data: routines, isLoading: routinesLoading, mutate: refreshRoutines } = useCollection<Routine>(appwriteConfig.routinesCollectionId, [Query.orderDesc('$createdAt')]);
+  const { data: allRoutines, isLoading: routinesLoading, mutate: refreshRoutines } = useCollection<Routine>(appwriteConfig.routinesCollectionId, [Query.limit(500), Query.orderDesc('$createdAt')]);
+  const routines = React.useMemo(() => {
+    if (!allRoutines) return [];
+    return [...allRoutines].sort((a, b) => parseBengaliDate(a.date).getTime() - parseBengaliDate(b.date).getTime());
+  }, [allRoutines]);
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(appwriteConfig.coursesCollectionId);
 
   const form = useForm<RoutineFormValues>({
