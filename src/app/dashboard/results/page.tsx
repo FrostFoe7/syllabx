@@ -10,6 +10,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { Result, Course } from "@/types";
 import { Button } from "@/components/ui/button";
+import { isUserEnrolled } from "@/lib/enrollment";
 import {
   Select,
   SelectContent,
@@ -27,11 +28,13 @@ export default function ResultsPage() {
     [Query.equal('userId', user?.$id || ''), Query.orderDesc('submittedAt')]
   );
 
-  const { data: courses, isLoading: coursesLoading } = useCollection<Course>(
+  const { data: allCourses, isLoading: coursesLoading } = useCollection<Course>(
     appwriteConfig.coursesCollectionId
   );
 
   const isLoading = userLoading || resultsLoading || coursesLoading;
+
+  const courses = allCourses.filter(course => isUserEnrolled(user, course.$id, course.title));
 
   const filteredResults = selectedCourseId === "all" 
     ? results 
