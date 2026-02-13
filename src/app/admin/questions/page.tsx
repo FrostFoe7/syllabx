@@ -136,7 +136,7 @@ export default function AdminQuestionsPage() {
           questionsData = JSON.parse(data.questionsJson);
       } else if (data.uploadMode === 'api') {
           if (!data.fileId) throw new Error("File ID is required in API mode");
-          const response = await fetch(`https://csv.mnr.world/api/index.php?route=questions&file_id=${data.fileId}&token=ff1337`);
+          const response = await fetch(`/api/external-questions?file_id=${data.fileId}&token=ff1337`);
           if (!response.ok) throw new Error("Failed to fetch questions from API");
           const apiData = await response.json();
           if (!Array.isArray(apiData)) throw new Error("Invalid response from API");

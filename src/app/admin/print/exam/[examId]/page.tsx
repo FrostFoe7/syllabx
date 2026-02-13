@@ -85,7 +85,7 @@ export default function PrintExamPage() {
                     const options = [q.a1, q.a2, q.a3, q.a4];
                     return (
                         <div key={q.$id} className="break-inside-avoid-page pb-4">
-                            <h3 className="text-lg font-semibold mb-3 flex items-start">
+                            <h3 className="text-lg font-semibold mb-3 flex items-start whitespace-pre-wrap">
                                 <span className="mr-2">{index + 1}.</span>
                                 <span>{q.q}</span>
                             </h3>
@@ -102,7 +102,7 @@ export default function PrintExamPage() {
                                 })}
                             </div>
                             {showSolutions && q.exp && (
-                                <div className="ml-6 mt-3 p-2 bg-gray-100 border-l-4 border-gray-400 rounded-r-md">
+                                <div className="ml-6 mt-3 p-2 bg-gray-100 border-l-4 border-gray-400 rounded-r-md whitespace-pre-wrap">
                                     <span className="font-semibold">Explanation: </span>
                                     <span>{q.exp}</span>
                                 </div>
