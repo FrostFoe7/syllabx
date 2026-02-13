@@ -153,7 +153,7 @@ export default function ResultDetailPage() {
                   <Card key={q.$id} className={`overflow-hidden border-l-4 ${isCorrect ? 'border-l-green-500' : isUnanswered ? 'border-l-gray-300' : 'border-l-red-500'}`}>
                       <CardHeader className="bg-gray-50/50">
                           <div className="flex justify-between items-start gap-4">
-                              <CardTitle className="text-base font-medium leading-relaxed">
+                              <CardTitle className="text-base font-medium leading-relaxed whitespace-pre-wrap">
                                   <span className="font-bold mr-2">{index + 1}.</span>
                                   {q.q}
                               </CardTitle>
@@ -196,7 +196,7 @@ export default function ResultDetailPage() {
                                       <Info size={16} />
                                       Explanation:
                                   </div>
-                                  <p className="text-gray-700 leading-relaxed">{q.exp}</p>
+                                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{q.exp}</p>
                               </div>
                           )}
                       </CardContent>

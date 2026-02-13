@@ -15,9 +15,16 @@ export const ExamFormSchema = z.object({
   endTime: z.string().refine((val) => val && !isNaN(Date.parse(val)), { message: "A valid end time is required." }),
   duration: z.coerce.number().min(1, 'Duration must be at least 1 minute.'),
   negativeMark: z.coerce.number().min(0, 'Negative mark cannot be negative.'),
-  uploadMode: z.enum(['json', 'manual']).default('json'),
+  uploadMode: z.enum(['json', 'manual', 'api']).default('json'),
+  fileId: z.string().optional(),
   questionsJson: z.string().optional(),
   questions: z.array(ExamQuestionSchema).optional(),
+}).refine((data) => {
+    if (data.uploadMode === 'api' && !data.fileId) return false;
+    return true;
+}, {
+    message: "File ID is required for API mode",
+    path: ["fileId"]
 }).refine((data) => {
     return new Date(data.endTime) > new Date(data.startTime);
 }, {

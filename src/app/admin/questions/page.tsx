@@ -30,7 +30,7 @@ import {
 import { ID, Query } from 'appwrite';
 import { useDatabases, useCollection, appwriteConfig } from '@/appwrite';
 import { ExamFormSchema, ExamFormValues } from './schema';
-import { Trash2, AlertCircle, Plus, FileJson, LayoutList, Pencil } from 'lucide-react';
+import { Trash2, AlertCircle, Plus, FileJson, LayoutList, Pencil, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
@@ -55,6 +55,16 @@ interface QuestionInput {
     explanation?: string;
 }
 
+interface ExternalApiQuestion {
+    question_text: string;
+    option1: string;
+    option2: string;
+    option3: string;
+    option4: string;
+    answer: string;
+    explanation: string;
+}
+
 export default function AdminQuestionsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCourseFilter, setSelectedCourseFilter] = useState<string>('all');
@@ -77,6 +87,7 @@ export default function AdminQuestionsPage() {
       duration: 60,
       negativeMark: 0.25,
       uploadMode: 'json',
+      fileId: '',
       questionsJson: '',
       questions: [{ question: '', options: ['', '', '', ''], answer: '' }],
     },
@@ -123,6 +134,23 @@ export default function AdminQuestionsPage() {
       if (data.uploadMode === 'json') {
           if (!data.questionsJson) throw new Error("JSON is required in JSON mode");
           questionsData = JSON.parse(data.questionsJson);
+      } else if (data.uploadMode === 'api') {
+          if (!data.fileId) throw new Error("File ID is required in API mode");
+          const response = await fetch(`https://csv.mnr.world/api/index.php?route=questions&file_id=${data.fileId}&token=ff1337`);
+          if (!response.ok) throw new Error("Failed to fetch questions from API");
+          const apiData = await response.json();
+          if (!Array.isArray(apiData)) throw new Error("Invalid response from API");
+          
+          questionsData = apiData.map((q: ExternalApiQuestion) => {
+              const options = [q.option1, q.option2, q.option3, q.option4];
+              const ansIdx = parseInt(q.answer) - 1;
+              return {
+                  question: (q.question_text || "").replace(/<br\s*\/?>/gi, '\n'),
+                  options: options,
+                  answer: options[ansIdx] || q.option1,
+                  explanation: (q.explanation || "").replace(/<br\s*\/?>/gi, '\n')
+              };
+          });
       } else {
           questionsData = (data.questions || []) as QuestionInput[];
       }
@@ -358,6 +386,15 @@ export default function AdminQuestionsPage() {
                                 </Button>
                                 <Button 
                                     type="button"
+                                    variant={form.watch('uploadMode') === 'api' ? 'default' : 'ghost'}
+                                    size="sm"
+                                    onClick={() => form.setValue('uploadMode', 'api')}
+                                    className="gap-2"
+                                >
+                                    <Globe size={14} /> API
+                                </Button>
+                                <Button 
+                                    type="button"
                                     variant={form.watch('uploadMode') === 'manual' ? 'default' : 'ghost'}
                                     size="sm"
                                     onClick={() => form.setValue('uploadMode', 'manual')}
@@ -382,6 +419,21 @@ export default function AdminQuestionsPage() {
                                     />
                                     </FormControl>
                                     <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        ) : form.watch('uploadMode') === 'api' ? (
+                            <FormField
+                                control={form.control}
+                                name="fileId"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>External API File ID</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g., 1f38ed5c-0fde-4439-b500-fe720a283142" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    <p className="text-[10px] text-muted-foreground mt-1">Questions will be fetched automatically during submission.</p>
                                 </FormItem>
                                 )}
                             />

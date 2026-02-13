@@ -338,7 +338,7 @@ export default function ExamEnginePage() {
                         data-index={index}
                     >
                     <CardContent className="pt-8">
-                        <h2 className="text-lg md:text-xl font-medium mb-8 leading-relaxed">
+                        <h2 className="text-lg md:text-xl font-medium mb-8 leading-relaxed whitespace-pre-wrap">
                             <span className="font-bold mr-2">{index + 1}.</span>
                             {question.q}
                         </h2>
