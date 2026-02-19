@@ -2,9 +2,6 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  image: {
-    unoptimized: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -12,6 +9,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    unoptimized: true,
     qualities: [50, 75, 100],
     remotePatterns: [
       {
@@ -41,6 +39,18 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'avatars.githubusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.logo.wine',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'download.logo.wine',
         port: '',
         pathname: '/**',
       },
