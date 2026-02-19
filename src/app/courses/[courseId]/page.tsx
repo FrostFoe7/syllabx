@@ -60,7 +60,7 @@ const parseBengaliDate = (dateStr: string) => {
 export default function CourseDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const courseId = params.courseId as string;
+  const courseId = decodeURIComponent(params.courseId as string);
   const { toast } = useToast();
   const databases = useDatabases();
 
@@ -403,17 +403,17 @@ export default function CourseDetailPage() {
                   <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 space-y-3">
                       <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                              <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/bkash.png" alt="bKash" width={24} height={24} />
+                              <Image src="https://www.logo.wine/a/logo/BKash/BKash-Icon-Logo.wine.svg" alt="bKash" width={32} height={32} className="object-contain" />
                               <span className="font-bold">বিকাশ (Personal):</span>
                           </div>
-                          <code className="bg-white px-2 py-1 rounded border font-mono font-bold">017XXXXXXXX</code>
+                          <code className="bg-white px-2 py-1 rounded border font-mono font-bold">01581609238</code>
                       </div>
                       <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                              <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/nagad.png" alt="Nagad" width={24} height={24} />
+                              <Image src="https://www.logo.wine/a/logo/Nagad/Nagad-Logo.wine.svg" alt="Nagad" width={40} height={32} className="object-contain" />
                               <span className="font-bold">নগদ (Personal):</span>
                           </div>
-                          <code className="bg-white px-2 py-1 rounded border font-mono font-bold">017XXXXXXXX</code>
+                          <code className="bg-white px-2 py-1 rounded border font-mono font-bold">01794260926</code>
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
                           * টাকা পাঠানোর পর অবশ্যই আমাদের ইনবক্সে (Telegram/Messenger) একটি মেসেজ দিন।

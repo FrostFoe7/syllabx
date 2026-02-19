@@ -6,7 +6,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { ID } from 'appwrite';
-import { useDatabases, appwriteConfig } from '@/appwrite';
+import { useDatabases, appwriteConfig, useCollection } from '@/appwrite';
 import { useToast } from '@/hooks/use-toast';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,8 +21,16 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { Category } from '@/types';
 
 const courseSchema = z.object({
   title: z.string().min(3, 'Course title must be at least 3 characters'),
@@ -32,7 +40,7 @@ const courseSchema = z.object({
   features: z.string().optional(),
   slug: z.string().optional(),
   startDate: z.string().optional(),
-  categoryId: z.string().optional(),
+  categoryId: z.string().min(1, 'Category is required'),
 });
 
 type CourseFormValues = z.infer<typeof courseSchema>;
@@ -42,6 +50,8 @@ export default function CreateCoursePage() {
   const { toast } = useToast();
   const databases = useDatabases();
   const [isLoading, setIsLoading] = useState(false);
+
+  const { data: categories } = useCollection<Category>(appwriteConfig.categoriesCollectionId);
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseSchema),
@@ -192,10 +202,21 @@ export default function CreateCoursePage() {
                 name="categoryId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category ID</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., hsc-26 or qb-course" {...field} />
-                    </FormControl>
+                    <FormLabel>Category</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories?.map((cat) => (
+                          <SelectItem key={cat.$id} value={cat.slug}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
