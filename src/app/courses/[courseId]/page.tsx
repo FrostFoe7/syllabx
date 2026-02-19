@@ -162,6 +162,7 @@ export default function CourseDetailPage() {
                   userName: user?.name,
                   courseId: course?.$id,
                   courseName: course?.title,
+                  coursePrice: course?.price,
                   paymentNumber: paymentNumber,
                   status: 'pending',
                   createdAt: new Date().toISOString(),
@@ -421,16 +422,10 @@ export default function CourseDetailPage() {
                   </div>
 
                   <div className="space-y-4">
-                      <div className="flex items-center gap-4">
-                          <a href="https://t.me/shu_yaib" target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors border border-blue-100">
-                              <Send size={18} />
-                              <span>Telegram Inbox</span>
-                          </a>
-                          <a href="https://m.me/yourpage" target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 transition-colors border border-pink-100">
-                              <MessageSquare size={18} />
-                              <span>Messenger</span>
-                          </a>
-                      </div>
+                      <a href="https://t.me/shu_yaib" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 py-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all border border-blue-100 shadow-sm group">
+                          <Image src="https://download.logo.wine/logo/Telegram_(software)/Telegram_(software)-Logo.wine.png" alt="Telegram" width={40} height={40} className="object-contain -ml-2" />
+                          <span className="font-bold text-lg">Message on Telegram</span>
+                      </a>
 
                       <div className="space-y-2">
                           <Label htmlFor="paymentNumber" className="text-base font-bold">আপনার পেমেন্ট নম্বর (যে নম্বর থেকে টাকা পাঠিয়েছেন):</Label>

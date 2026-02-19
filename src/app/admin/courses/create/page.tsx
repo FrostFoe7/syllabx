@@ -35,12 +35,21 @@ import { Category } from '@/types';
 const courseSchema = z.object({
   title: z.string().min(3, 'Course title must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  price: z.string().min(1, 'Price is required'),
+  pricingType: z.enum(['free', 'paid']),
+  price: z.string().optional(),
   image: z.string().url('Please provide a valid image URL'),
   features: z.string().optional(),
   slug: z.string().optional(),
   startDate: z.string().optional(),
   categoryId: z.string().min(1, 'Category is required'),
+}).refine((data) => {
+  if (data.pricingType === 'paid' && (!data.price || data.price.trim() === '')) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Price is required for paid courses",
+  path: ["price"],
 });
 
 type CourseFormValues = z.infer<typeof courseSchema>;
@@ -58,6 +67,7 @@ export default function CreateCoursePage() {
     defaultValues: {
       title: '',
       description: '',
+      pricingType: 'free',
       price: '',
       image: '',
       features: '',
@@ -67,13 +77,21 @@ export default function CreateCoursePage() {
     },
   });
 
+  const pricingType = form.watch('pricingType');
+
   const onSubmit: SubmitHandler<CourseFormValues> = async (data) => {
     setIsLoading(true);
     try {
+      let finalPrice = 'FREE';
+      if (data.pricingType === 'paid' && data.price) {
+          const cleanPrice = data.price.replace('৳', '').trim();
+          finalPrice = `৳${cleanPrice}`;
+      }
+
       const courseData = {
         title: data.title,
         description: data.description,
-        price: data.price,
+        price: finalPrice,
         image: data.image,
         features: data.features ? data.features.split('\n').filter(f => f.trim()) : [],
         slug: data.slug || data.title.toLowerCase().replace(/\s+/g, '-'),
@@ -167,21 +185,47 @@ export default function CreateCoursePage() {
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="price"
+                  name="pricingType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., 999" {...field} />
-                      </FormControl>
+                      <FormLabel>Pricing Type</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="free">Free</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
+                {pricingType === 'paid' && (
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price (Amount)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., 700" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="startDate"
@@ -195,32 +239,32 @@ export default function CreateCoursePage() {
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <FormField
-                control={form.control}
-                name="categoryId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories?.map((cat) => (
-                          <SelectItem key={cat.$id} value={cat.slug}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categories?.map((cat) => (
+                            <SelectItem key={cat.$id} value={cat.slug}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}

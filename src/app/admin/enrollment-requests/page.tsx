@@ -138,6 +138,7 @@ export default function EnrollmentRequestsPage() {
                                 <TableRow>
                                     <TableHead>নাম</TableHead>
                                     <TableHead>কোর্স</TableHead>
+                                    <TableHead>প্রাইস</TableHead>
                                     <TableHead>পেমেন্ট নম্বর</TableHead>
                                     <TableHead>তারিখ</TableHead>
                                     <TableHead>স্ট্যাটাস</TableHead>
@@ -147,7 +148,7 @@ export default function EnrollmentRequestsPage() {
                             <TableBody>
                                 {isLoading ? (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center py-10">
+                                        <TableCell colSpan={7} className="text-center py-10">
                                             <Loader2 className="animate-spin mx-auto h-8 w-8 text-primary" />
                                         </TableCell>
                                     </TableRow>
@@ -156,6 +157,7 @@ export default function EnrollmentRequestsPage() {
                                         <TableRow key={request.$id}>
                                             <TableCell className="font-medium">{request.userName}</TableCell>
                                             <TableCell>{request.courseName}</TableCell>
+                                            <TableCell className="font-bold text-green-600">{request.coursePrice || 'N/A'}</TableCell>
                                             <TableCell>
                                                 <Badge variant="outline" className="font-mono">{request.paymentNumber}</Badge>
                                             </TableCell>

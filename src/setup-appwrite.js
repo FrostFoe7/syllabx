@@ -380,6 +380,7 @@ async function setup() {
     await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'userName', 100, true);
     await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'courseId', 100, true);
     await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'courseName', 255, true);
+    await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'coursePrice', 50, true);
     await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'paymentNumber', 20, true);
     await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'status', 20, true);
     await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'createdAt', 30, true);

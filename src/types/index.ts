@@ -91,6 +91,7 @@ export interface EnrollmentRequest extends Models.Document {
     userName: string;
     courseId: string;
     courseName: string;
+    coursePrice: string;
     paymentNumber: string;
     status: 'pending' | 'approved' | 'rejected';
     createdAt: string;

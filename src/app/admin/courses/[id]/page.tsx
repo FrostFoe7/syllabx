@@ -26,12 +26,21 @@ import { Switch } from '@/components/ui/switch';
 
 const courseSchema = z.object({
   title: z.string().min(3, 'Title is too short'),
-  price: z.string().min(1, 'Price is required'),
+  pricingType: z.enum(['free', 'paid']),
+  price: z.string().optional(),
   description: z.string().min(10, 'Description is too short'),
   image: z.string().url('Invalid image URL'),
   disabled: z.boolean().default(false),
   startDate: z.string().optional(),
   categoryId: z.string().min(1, 'Category ID is required'),
+}).refine((data) => {
+  if (data.pricingType === 'paid' && (!data.price || data.price.trim() === '')) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Price is required for paid courses",
+  path: ["price"],
 });
 
 type CourseValues = z.infer<typeof courseSchema>;
@@ -55,6 +64,7 @@ export default function CourseEditPage() {
     resolver: zodResolver(courseSchema),
     defaultValues: {
       title: '',
+      pricingType: 'free',
       price: '',
       description: '',
       image: '',
@@ -64,11 +74,17 @@ export default function CourseEditPage() {
     }
   });
 
+  const pricingType = form.watch('pricingType');
+
   React.useEffect(() => {
     if (course) {
+      const isPaid = course.price !== 'FREE' && course.price !== 'EXPIRED';
+      const displayPrice = isPaid ? course.price.replace('৳', '').trim() : '';
+      
       form.reset({
         title: course.title,
-        price: course.price,
+        pricingType: isPaid ? 'paid' : 'free',
+        price: displayPrice,
         description: course.description,
         image: course.image,
         disabled: !!course.disabled,
@@ -81,11 +97,22 @@ export default function CourseEditPage() {
   const onSubmit: SubmitHandler<CourseValues> = async (data) => {
     setIsSaving(true);
     try {
+      let finalPrice = 'FREE';
+      if (data.pricingType === 'paid' && data.price) {
+          const cleanPrice = data.price.replace('৳', '').trim();
+          finalPrice = `৳${cleanPrice}`;
+      }
+
+      const updateData = {
+          ...data,
+          price: finalPrice
+      };
+
       await databases.updateDocument(
         appwriteConfig.databaseId,
         appwriteConfig.coursesCollectionId,
         id,
-        data
+        updateData
       );
       toast({ title: 'Success', description: 'Course updated successfully' });
       router.push('/admin/courses');
@@ -155,18 +182,42 @@ export default function CourseEditPage() {
                 />
                 <FormField
                   control={form.control}
-                  name="price"
+                  name="pricingType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Price</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g. FREE or ৳700" />
-                      </FormControl>
+                      <FormLabel>Pricing Type</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="free">Free</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+
+              {pricingType === 'paid' && (
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price (Amount)</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g. 700" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
