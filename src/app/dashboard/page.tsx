@@ -37,7 +37,14 @@ export default function DashboardCoursesPage() {
       
       // Find course by title to get the ID
       const courseObj = allCourses?.find(c => c.title === decodedCourseName || c.$id === decodedCourseName);
-      const courseIdToEnroll = courseObj ? courseObj.$id : decodedCourseName; // Fallback to name if not found (for legacy/error handling)
+      
+      // IMPORTANT: Only auto-enroll if it's FREE
+      if (courseObj && (courseObj.price !== 'FREE')) {
+          router.replace('/dashboard');
+          return;
+      }
+
+      const courseIdToEnroll = courseObj ? courseObj.$id : decodedCourseName; 
 
       const collectionId = appwriteConfig.usersCollectionId;
       const documentId = user.$id;

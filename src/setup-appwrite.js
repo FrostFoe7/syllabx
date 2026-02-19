@@ -18,6 +18,7 @@ const EXAMS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_EXAMS_COLLECTION_ID
 const QUESTIONS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_QUESTIONS_COLLECTION_ID || 'questions';
 const COURSES_COLLECTION_ID = 'courses';
 const CATEGORIES_COLLECTION_ID = 'categories';
+const ENROLLMENT_REQUESTS_COLLECTION_ID = 'enrollment_requests';
 const ROUTINES_COLLECTION_ID = 'routines';
 const RESULTS_COLLECTION_ID = 'results';
 const CALENDAR_COLLECTION_ID = 'calendar';
@@ -367,6 +368,24 @@ async function setup() {
     await createAttribute(DATABASE_ID, CALENDAR_COLLECTION_ID, 'string', 'date', 100, true);
     await createAttribute(DATABASE_ID, CALENDAR_COLLECTION_ID, 'string', 'time', 100, false);
     await createAttribute(DATABASE_ID, CALENDAR_COLLECTION_ID, 'datetime', 'examDateTime', null, false);
+
+    // 8.6 Create Enrollment Requests Collection
+    await getOrCreateCollection(ENROLLMENT_REQUESTS_COLLECTION_ID, 'Enrollment Requests', [
+        Permission.read(Role.any()), // Allow users to read (they might want to see their own requests)
+        Permission.create(Role.users()),
+        Permission.update(Role.team(ADMIN_TEAM_ID)),
+        Permission.delete(Role.team(ADMIN_TEAM_ID)),
+    ]);
+    await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'userId', 36, true);
+    await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'userName', 100, true);
+    await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'courseId', 100, true);
+    await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'courseName', 255, true);
+    await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'paymentNumber', 20, true);
+    await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'status', 20, true);
+    await createAttribute(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'string', 'createdAt', 30, true);
+
+    await createIndex(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'userId_index', 'key', ['userId']);
+    await createIndex(DATABASE_ID, ENROLLMENT_REQUESTS_COLLECTION_ID, 'status_index', 'key', ['status']);
 
     // 9. Create Storage Bucket
     try {

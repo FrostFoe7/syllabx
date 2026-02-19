@@ -85,3 +85,13 @@ export interface CalendarItem extends Models.Document {
     time?: string;
     examDateTime?: string;
 }
+
+export interface EnrollmentRequest extends Models.Document {
+    userId: string;
+    userName: string;
+    courseId: string;
+    courseName: string;
+    paymentNumber: string;
+    status: 'pending' | 'approved' | 'rejected';
+    createdAt: string;
+}

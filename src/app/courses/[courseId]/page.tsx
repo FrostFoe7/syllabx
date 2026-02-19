@@ -4,13 +4,18 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { CheckCircle, Calendar, UserRound, Info, Send, Menu, Printer, Home as HomeIcon, BookOpen } from 'lucide-react';
-import { useUser, useCollection, appwriteConfig } from '@/appwrite';
+import { CheckCircle, Calendar, UserRound, Info, Send, Menu, Printer, Home as HomeIcon, BookOpen, CreditCard, Phone, MessageSquare } from 'lucide-react';
+import { useUser, useCollection, appwriteConfig, useDatabases } from '@/appwrite';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Query, Models } from 'appwrite';
+import { Query, Models, ID } from 'appwrite';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Routine } from '@/types';
+import { Routine, EnrollmentRequest } from '@/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 const bengaliToEnglishDigits = (str: string) => {
   const digits: { [key: string]: string } = {
@@ -47,7 +52,7 @@ const parseBengaliDate = (dateStr: string) => {
       year = parseInt(bengaliToEnglishDigits(parts[2]));
     }
     return new Date(year, month, day);
-  } catch (e) {
+  } catch {
     return new Date(0);
   }
 };
@@ -56,6 +61,8 @@ export default function CourseDetailPage() {
   const params = useParams();
   const router = useRouter();
   const courseId = params.courseId as string;
+  const { toast } = useToast();
+  const databases = useDatabases();
 
   const { data: courses, isLoading: isCourseLoading } = useCollection<{ title: string; image: string; slug: string; price: string; startDate?: string; description?: string; features: string[]; disabled?: boolean; imageHint?: string } & Models.Document>(
       appwriteConfig.coursesCollectionId,
@@ -78,6 +85,24 @@ export default function CourseDetailPage() {
   const { user, isAdmin } = useUser();
   const [year] = useState(() => new Date().getFullYear());
 
+  // Enrollment Request State
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [paymentNumber, setPaymentNumber] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Check if user is already enrolled
+  const isEnrolled = user?.enrolledCourses?.includes(course?.$id || '') || user?.enrolledCourses?.includes(course?.title || '');
+
+  // Check for pending requests
+  const { data: requests } = useCollection<EnrollmentRequest>(
+      user && course ? appwriteConfig.enrollmentRequestsCollectionId : null,
+      [
+          Query.equal('userId', user?.$id || ''),
+          Query.equal('courseId', course?.$id || ''),
+      ]
+  );
+  const pendingRequest = requests?.find(r => r.status === 'pending');
+
   const navLinks = [
     { href: '/', text: 'হোম', icon: HomeIcon },
     { href: '/#courses-section', text: 'কোর্সসমূহ', icon: BookOpen },
@@ -87,12 +112,78 @@ export default function CourseDetailPage() {
   ];
 
   const executeRedirect = () => {
-    const encodedCourseName = encodeURIComponent(course?.title || '');
-    if (user) {
-        router.push(`/dashboard?course=${encodedCourseName}`);
-    } else {
+    if (!user) {
+        const encodedCourseName = encodeURIComponent(course?.title || '');
         router.push(`/login?course=${encodedCourseName}`);
+        return;
     }
+
+    if (isEnrolled) {
+        router.push('/dashboard');
+        return;
+    }
+
+    if (pendingRequest) {
+        toast({
+            title: "Request Pending",
+            description: "আপনার এনরোলমেন্ট রিকোয়েস্ট পেন্ডিং আছে। অনুগ্রহ করে অপেক্ষা করুন।",
+        });
+        return;
+    }
+
+    const isPaid = course?.price !== 'FREE' && course?.price !== 'EXPIRED';
+    
+    if (isPaid) {
+        setShowRequestDialog(true);
+    } else {
+        const encodedCourseName = encodeURIComponent(course?.title || '');
+        router.push(`/dashboard?course=${encodedCourseName}`);
+    }
+  };
+
+  const handleSubmitRequest = async () => {
+      if (!paymentNumber) {
+          toast({
+              variant: "destructive",
+              title: "Error",
+              description: "যে নম্বর থেকে টাকা পাঠিয়েছেন তা লিখুন।",
+          });
+          return;
+      }
+
+      setIsSubmitting(true);
+      try {
+          await databases.createDocument(
+              appwriteConfig.databaseId,
+              appwriteConfig.enrollmentRequestsCollectionId,
+              ID.unique(),
+              {
+                  userId: user?.$id,
+                  userName: user?.name,
+                  courseId: course?.$id,
+                  courseName: course?.title,
+                  paymentNumber: paymentNumber,
+                  status: 'pending',
+                  createdAt: new Date().toISOString(),
+              }
+          );
+
+          toast({
+              title: "Success",
+              description: "আপনার এনরোলমেন্ট রিকোয়েস্ট সফলভাবে জমা হয়েছে। অ্যাডমিন চেক করে আপনাকে এনরোল করে দিবে।",
+          });
+          setShowRequestDialog(false);
+          setPaymentNumber('');
+      } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : "রিকোয়েস্ট জমা দিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।";
+          toast({
+              variant: "destructive",
+              title: "Error",
+              description: message,
+          });
+      } finally {
+          setIsSubmitting(false);
+      }
   };
 
 
@@ -223,7 +314,7 @@ export default function CourseDetailPage() {
                             disabled={course.disabled}
                             className={cn("inline-block bg-primary text-black px-8 py-4 rounded-lg no-underline font-bold text-lg mt-6 w-full transition-all duration-300 font-montserrat", 
                             course.disabled ? "bg-gray-400 cursor-not-allowed" : "hover:bg-yellow-500 hover:-translate-y-1 hover:shadow-lg")}>
-                            Enroll Now
+                            {isEnrolled ? 'Go to Course' : (pendingRequest ? 'Request Pending' : 'Enroll Now')}
                         </button>
                     </div>
                 </div>
@@ -294,6 +385,80 @@ export default function CourseDetailPage() {
             </div>
         </div>
       </main>
+
+      {/* Enrollment Request Dialog */}
+      <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
+          <DialogContent className="sm:max-w-[500px] font-tiro-bangla">
+              <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                      <CreditCard className="text-primary" />
+                      এনরোলমেন্ট রিকোয়েস্ট
+                  </DialogTitle>
+                  <DialogDescription className="text-base mt-2">
+                      এই কোর্সটি এনরোল করতে নিচের দেওয়া নম্বরে <strong>{course.price}</strong> টাকা পেমেন্ট করুন এবং পেমেন্ট শেষে আপনার নম্বরটি দিন।
+                  </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-6 py-4">
+                  <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 space-y-3">
+                      <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                              <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/bkash.png" alt="bKash" width={24} height={24} />
+                              <span className="font-bold">বিকাশ (Personal):</span>
+                          </div>
+                          <code className="bg-white px-2 py-1 rounded border font-mono font-bold">017XXXXXXXX</code>
+                      </div>
+                      <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                              <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/nagad.png" alt="Nagad" width={24} height={24} />
+                              <span className="font-bold">নগদ (Personal):</span>
+                          </div>
+                          <code className="bg-white px-2 py-1 rounded border font-mono font-bold">017XXXXXXXX</code>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                          * টাকা পাঠানোর পর অবশ্যই আমাদের ইনবক্সে (Telegram/Messenger) একটি মেসেজ দিন।
+                      </p>
+                  </div>
+
+                  <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                          <a href="https://t.me/shu_yaib" target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors border border-blue-100">
+                              <Send size={18} />
+                              <span>Telegram Inbox</span>
+                          </a>
+                          <a href="https://m.me/yourpage" target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 transition-colors border border-pink-100">
+                              <MessageSquare size={18} />
+                              <span>Messenger</span>
+                          </a>
+                      </div>
+
+                      <div className="space-y-2">
+                          <Label htmlFor="paymentNumber" className="text-base font-bold">আপনার পেমেন্ট নম্বর (যে নম্বর থেকে টাকা পাঠিয়েছেন):</Label>
+                          <div className="relative">
+                              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                              <Input 
+                                  id="paymentNumber" 
+                                  placeholder="017XXXXXXXX" 
+                                  className="pl-10 h-12 text-lg" 
+                                  value={paymentNumber}
+                                  onChange={(e) => setPaymentNumber(e.target.value)}
+                              />
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <DialogFooter>
+                  <Button 
+                      onClick={handleSubmitRequest} 
+                      disabled={isSubmitting}
+                      className="w-full h-12 text-lg bg-primary text-black hover:bg-yellow-500 font-bold"
+                  >
+                      {isSubmitting ? 'প্রসেসিং হচ্ছে...' : 'রিকোয়েস্ট পাঠান'}
+                  </Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <footer className="bg-white border-t mt-12 print:hidden">

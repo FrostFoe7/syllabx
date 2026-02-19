@@ -10,6 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import {
   Card,
   CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
 } from '@/components/ui/card';
 import {
   Table,
@@ -26,7 +29,6 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-    DialogClose
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -45,8 +47,9 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Edit, Trash2, Loader2, CalendarPlus } from 'lucide-react';
+import { Plus, Edit, Trash2, Loader2, CalendarPlus, ListPlus, Trash } from 'lucide-react';
 
 const bengaliToEnglishDigits = (str: string) => {
   const digits: { [key: string]: string } = {
@@ -83,7 +86,7 @@ const parseBengaliDate = (dateStr: string) => {
       year = parseInt(bengaliToEnglishDigits(parts[2]));
     }
     return new Date(year, month, day);
-  } catch (e) {
+  } catch {
     return new Date(0);
   }
 };
@@ -111,18 +114,30 @@ const routineSchema = z.object({
 type RoutineFormValues = z.infer<typeof routineSchema>;
 
 export default function AdminRoutinesPage() {
+  const [selectedCourseId, setSelectedCourseId] = React.useState<string>('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [bulkDialogOpen, setBulkDialogOpen] = React.useState(false);
   const [editingRoutine, setEditingRoutine] = React.useState<Routine | null>(null);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [bulkText, setBulkText] = React.useState('');
 
   const { toast } = useToast();
   const databases = useDatabases();
-  const { data: allRoutines, isLoading: routinesLoading, mutate: refreshRoutines } = useCollection<Routine>(appwriteConfig.routinesCollectionId, [Query.limit(500), Query.orderDesc('$createdAt')]);
-  const routines = React.useMemo(() => {
+  
+  const { data: allRoutines, isLoading: routinesLoading, mutate: refreshRoutines } = useCollection<Routine>(
+      appwriteConfig.routinesCollectionId, 
+      [Query.limit(500), Query.orderDesc('$createdAt')]
+  );
+  
+  const { data: courses } = useCollection<Course>(appwriteConfig.coursesCollectionId);
+
+  const filteredRoutines = React.useMemo(() => {
     if (!allRoutines) return [];
-    return [...allRoutines].sort((a, b) => parseBengaliDate(a.date).getTime() - parseBengaliDate(b.date).getTime());
-  }, [allRoutines]);
-  const { data: courses, isLoading: coursesLoading } = useCollection<Course>(appwriteConfig.coursesCollectionId);
+    const filtered = selectedCourseId 
+        ? allRoutines.filter(r => r.courseId === selectedCourseId)
+        : allRoutines;
+    return [...filtered].sort((a, b) => parseBengaliDate(a.date).getTime() - parseBengaliDate(b.date).getTime());
+  }, [allRoutines, selectedCourseId]);
 
   const form = useForm<RoutineFormValues>({
     resolver: zodResolver(routineSchema),
@@ -142,7 +157,7 @@ export default function AdminRoutinesPage() {
       topic: routine.topic,
       time: routine.time || '',
     } : {
-      courseId: '',
+      courseId: selectedCourseId || '',
       date: '',
       topic: '',
       time: 'সকাল ১০টা - রাত ১০টা',
@@ -165,12 +180,64 @@ export default function AdminRoutinesPage() {
         }
         refreshRoutines();
         setDialogOpen(false);
-    } catch (error) {
-        const err = error as { message?: string };
-        toast({ variant: 'destructive', title: 'Error', description: err.message || 'Failed to save routine item.' });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to save routine item.';
+        toast({ variant: 'destructive', title: 'Error', description: message });
     } finally {
         setIsSaving(false);
     }
+  };
+
+  const handleBulkUpload = async () => {
+    if (!selectedCourseId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Please select a course first.' });
+        return;
+    }
+    if (!bulkText.trim()) return;
+
+    setIsSaving(true);
+    const lines = bulkText.split('\n').filter(line => line.trim());
+    const selectedCourse = courses?.find((c: Course) => c.$id === selectedCourseId);
+    
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const line of lines) {
+        // Expected format: "Date | Topic | Time" or "Date | Topic"
+        const parts = line.split('|').map(p => p.trim());
+        if (parts.length < 2) {
+            failCount++;
+            continue;
+        }
+
+        try {
+            await databases.createDocument(
+                appwriteConfig.databaseId, 
+                appwriteConfig.routinesCollectionId, 
+                ID.unique(), 
+                {
+                    courseId: selectedCourseId,
+                    courseName: selectedCourse?.title || 'Unknown',
+                    date: parts[0],
+                    topic: parts[1],
+                    time: parts[2] || 'সকাল ১০টা - রাত ১০টা'
+                }
+            );
+            successCount++;
+        } catch {
+            failCount++;
+        }
+    }
+
+    toast({
+        title: 'Bulk Upload Complete',
+        description: `Successfully added ${successCount} items. ${failCount} failed.`,
+    });
+    
+    setBulkText('');
+    setBulkDialogOpen(false);
+    refreshRoutines();
+    setIsSaving(false);
   };
 
   const handleDelete = async (routineId: string) => {
@@ -179,31 +246,115 @@ export default function AdminRoutinesPage() {
         await databases.deleteDocument(appwriteConfig.databaseId, appwriteConfig.routinesCollectionId, routineId);
         toast({ title: 'Success', description: 'Routine item deleted.' });
         refreshRoutines();
-    } catch (error) {
-        const err = error as { message?: string };
-        toast({ variant: 'destructive', title: 'Error', description: err.message || 'Failed to delete item.' });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to delete item.';
+        toast({ variant: 'destructive', title: 'Error', description: message });
     }
+  };
+
+  const handleDeleteAll = async () => {
+      if (!selectedCourseId) return;
+      const courseName = courses?.find(c => c.$id === selectedCourseId)?.title;
+      if (!confirm(`Are you sure you want to delete ALL routine items for "${courseName}"?`)) return;
+
+      setIsSaving(true);
+      try {
+          const toDelete = allRoutines?.filter(r => r.courseId === selectedCourseId) || [];
+          for (const item of toDelete) {
+              await databases.deleteDocument(appwriteConfig.databaseId, appwriteConfig.routinesCollectionId, item.$id);
+          }
+          toast({ title: 'Success', description: `Deleted all items for ${courseName}.` });
+          refreshRoutines();
+      } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'Failed to delete items.';
+          toast({ variant: 'destructive', title: 'Error', description: message });
+      } finally {
+          setIsSaving(false);
+      }
   };
   
   const getCourseName = (courseId: string) => courses?.find((c: Course) => c.$id === courseId)?.title || courseId;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Routine Management</h1>
-          <p className="text-muted-foreground">Add, edit, or delete course routines.</p>
+          <h1 className="text-3xl font-bold font-tiro-bangla">রুটিন ম্যানেজমেন্ট</h1>
+          <p className="text-muted-foreground">কোর্সের রুটিন যোগ, এডিট বা ডিলিট করুন।</p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
-          <Plus /> Add Routine Item
-        </Button>
+        <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setBulkDialogOpen(true)} className="gap-2">
+                <ListPlus size={18} /> Bulk Add
+            </Button>
+            <Button onClick={() => handleOpenDialog()} className="gap-2 bg-primary text-black hover:bg-yellow-500">
+                <Plus size={18} /> Add Item
+            </Button>
+        </div>
       </div>
 
+      <Card className="bg-white shadow-sm border-yellow-100">
+          <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-tiro-bangla">কোর্স সিলেক্ট করুন</CardTitle>
+              <CardDescription>প্রথমে একটি কোর্স সিলেক্ট করুন রুটিন দেখার বা যোগ করার জন্য।</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select onValueChange={setSelectedCourseId} value={selectedCourseId}>
+                <SelectTrigger className="w-full md:w-[400px] h-12 text-lg">
+                    <SelectValue placeholder="কোর্স নির্বাচন করুন" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all_courses_view">সব কোর্সের রুটিন (View All)</SelectItem>
+                    {courses?.map((c: Course) => (
+                        <SelectItem key={c.$id} value={c.$id}>{c.title}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+          </CardContent>
+      </Card>
+
+      {/* Bulk Upload Dialog */}
+      <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
+          <DialogContent className="sm:max-w-[600px] font-tiro-bangla">
+              <DialogHeader>
+                  <DialogTitle>বাল্ক রুটিন আপলোড</DialogTitle>
+                  <DialogDescription>
+                      নিচের ফরম্যাটে রুটিন লিখুন (প্রতি লাইনে একটি): <br/>
+                      <code className="bg-gray-100 p-1 rounded text-xs">তারিখ | টপিক | সময় (ঐচ্ছিক)</code>
+                  </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                      <FormLabel>কোর্স</FormLabel>
+                      <Select onValueChange={setSelectedCourseId} value={selectedCourseId}>
+                          <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
+                          <SelectContent>{courses?.map((c: Course) => <SelectItem key={c.$id} value={c.$id}>{c.title}</SelectItem>)}</SelectContent>
+                      </Select>
+                  </div>
+                  <div className="space-y-2">
+                      <FormLabel>রুটিন ডাটা</FormLabel>
+                      <Textarea 
+                        placeholder="১ ফেব্রুয়ারি | তাপগতিবিদ্যা | সকাল ১০টা - রাত ১০টা&#10;৩ ফেব্রুয়ারি | স্থির তড়িৎ" 
+                        className="min-h-[200px] font-mono"
+                        value={bulkText}
+                        onChange={(e) => setBulkText(e.target.value)}
+                      />
+                  </div>
+              </div>
+              <DialogFooter>
+                  <Button variant="ghost" onClick={() => setBulkDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={handleBulkUpload} disabled={isSaving || !selectedCourseId}>
+                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Upload All
+                  </Button>
+              </DialogFooter>
+          </DialogContent>
+      </Dialog>
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="font-tiro-bangla">
           <DialogHeader>
-            <DialogTitle>{editingRoutine ? 'Edit Routine Item' : 'Create New Routine Item'}</DialogTitle>
-            <DialogDescription>Fill in the details for the course routine.</DialogDescription>
+            <DialogTitle>{editingRoutine ? 'রুটিন এডিট করুন' : 'নতুন রুটিন যোগ করুন'}</DialogTitle>
+            <DialogDescription>রুটিনের বিস্তারিত তথ্য প্রদান করুন।</DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -212,21 +363,21 @@ export default function AdminRoutinesPage() {
                 name="courseId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Course</FormLabel>
+                    <FormLabel>কোর্স</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select a course" /></SelectTrigger></FormControl>
-                        <SelectContent>{coursesLoading ? <SelectItem value="loading" disabled>Loading...</SelectItem> : courses?.map((c: Course) => <SelectItem key={c.$id} value={c.$id}>{c.title}</SelectItem>)}</SelectContent>
+                        <SelectContent>{courses?.map((c: Course) => <SelectItem key={c.$id} value={c.$id}>{c.title}</SelectItem>)}</SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Date</FormLabel><FormControl><Input placeholder="e.g., February 1st, 2026" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="topic" render={({ field }) => (<FormItem><FormLabel>Topic / Subject</FormLabel><FormControl><Input placeholder="e.g., Thermodynamics" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="time" render={({ field }) => (<FormItem><FormLabel>Time (Optional)</FormLabel><FormControl><Input placeholder="e.g., 10 AM - 10 PM" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>তারিখ</FormLabel><FormControl><Input placeholder="উদা: ১ ফেব্রুয়ারি, ২০২৬" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="topic" render={({ field }) => (<FormItem><FormLabel>বিষয়/টপিক</FormLabel><FormControl><Input placeholder="উদা: তাপগতিবিদ্যা" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="time" render={({ field }) => (<FormItem><FormLabel>সময় (ঐচ্ছিক)</FormLabel><FormControl><Input placeholder="উদা: সকাল ১০টা - রাত ১০টা" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <DialogFooter>
-                  <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                  <Button type="submit" disabled={isSaving}>
+                  <Button variant="ghost" type="button" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={isSaving} className="bg-primary text-black hover:bg-yellow-500">
                       {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Save
                   </Button>
@@ -236,44 +387,66 @@ export default function AdminRoutinesPage() {
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardContent className="mt-6">
+      <Card className="bg-white shadow-sm border-gray-100">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div className="space-y-1">
+                <CardTitle className="font-tiro-bangla">রুটিন লিস্ট</CardTitle>
+                <CardDescription>
+                    {selectedCourseId && selectedCourseId !== 'all_courses_view' 
+                        ? `"${getCourseName(selectedCourseId)}" এর রুটিন দেখা হচ্ছে।`
+                        : "সব কোর্সের রুটিন দেখা হচ্ছে।"}
+                </CardDescription>
+            </div>
+            {selectedCourseId && selectedCourseId !== 'all_courses_view' && filteredRoutines.length > 0 && (
+                <Button variant="destructive" size="sm" onClick={handleDeleteAll} disabled={isSaving} className="gap-2">
+                    <Trash size={16} /> Delete All
+                </Button>
+            )}
+        </CardHeader>
+        <CardContent>
           {routinesLoading ? (
             <div className="space-y-2">
                 <Skeleton className="h-12 w-full" />
                 <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
             </div>
-          ) : routines && routines.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Course</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Topic</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {routines.map((item: Routine) => (
-                  <TableRow key={item.$id}>
-                    <TableCell className="font-medium">{getCourseName(item.courseId)}</TableCell>
-                    <TableCell>{item.date}</TableCell>
-                    <TableCell>{item.topic}</TableCell>
-                    <TableCell>{item.time || 'N/A'}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(item)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(item.$id)} className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          ) : filteredRoutines.length > 0 ? (
+            <div className="rounded-md border border-gray-100 overflow-hidden">
+                <Table>
+                <TableHeader className="bg-gray-50">
+                    <TableRow>
+                    <TableHead className="font-bold">Course</TableHead>
+                    <TableHead className="font-bold">Date</TableHead>
+                    <TableHead className="font-bold">Topic</TableHead>
+                    <TableHead className="font-bold">Time</TableHead>
+                    <TableHead className="text-right font-bold">Actions</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {filteredRoutines.map((item: Routine) => (
+                    <TableRow key={item.$id} className="hover:bg-yellow-50/30 transition-colors">
+                        <TableCell className="font-medium text-accent">{getCourseName(item.courseId)}</TableCell>
+                        <TableCell className="font-tiro-bangla">{item.date}</TableCell>
+                        <TableCell className="font-tiro-bangla font-semibold">{item.topic}</TableCell>
+                        <TableCell className="font-tiro-bangla text-gray-500">{item.time || 'সকাল ১০টা - রাত ১০টা'}</TableCell>
+                        <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(item)} className="hover:bg-yellow-100 hover:text-yellow-700"><Edit size={16} /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(item.$id)} className="text-destructive hover:bg-red-50"><Trash2 size={16} /></Button>
+                        </div>
+                        </TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+                </Table>
+            </div>
           ) : (
-            <div className="text-center py-20 border-2 border-dashed rounded-xl">
+            <div className="text-center py-20 border-2 border-dashed rounded-xl bg-gray-50/50">
                 <CalendarPlus className="mx-auto h-12 w-12 text-gray-300" />
-                <p className="text-muted-foreground mt-4 mb-4">No routine items found.</p>
-                <Button onClick={() => handleOpenDialog()}>Add First Routine Item</Button>
+                <p className="text-muted-foreground mt-4 font-tiro-bangla">এই কোর্সের জন্য কোনো রুটিন পাওয়া যায়নি।</p>
+                {selectedCourseId && selectedCourseId !== 'all_courses_view' && (
+                    <Button onClick={() => handleOpenDialog()} className="mt-4 bg-primary text-black hover:bg-yellow-500 font-tiro-bangla">রুটিন যোগ করুন</Button>
+                )}
             </div>
           )}
         </CardContent>

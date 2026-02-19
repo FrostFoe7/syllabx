@@ -14,6 +14,7 @@ import {
   LogOut,
   User as UserIcon,
   CalendarCheck,
+  CreditCard,
 } from 'lucide-react';
 
 import { useUser } from '@/appwrite';
@@ -48,6 +49,7 @@ const navItems = [
   { href: '/admin/questions', text: 'Questions', icon: Upload },
   { href: '/admin/results', text: 'Results', icon: BarChart2 },
   { href: '/admin/students', text: 'Students', icon: Users },
+  { href: '/admin/enrollment-requests', text: 'Enrollments', icon: CreditCard },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
