@@ -10,7 +10,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Skeleton } from '@/components/ui/skeleton';
 import { Category, Course } from '@/types';
 import { Separator } from '@/components/ui/separator';
-import { useRouter } from 'next/navigation';
 import { buttonVariants } from '@/components/ui/button';
 
 const heroData = {
@@ -31,7 +30,6 @@ export default function Home() {
   
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [year] = useState(() => new Date().getFullYear());
-  const router = useRouter();
 
   const currentTab = activeTab || (categories && categories.length > 0 ? categories[0].slug : null);
 
@@ -42,22 +40,13 @@ export default function Home() {
     { href: '/about', text: 'আমাদের সম্পর্কে', icon: Info },
     ...(user ? (isAdmin ? [{ href: '/admin/dashboard', text: 'অ্যাডমিন প্যানেল', icon: UserRound }] : [{ href: '/dashboard', text: 'ড্যাশবোর্ড', icon: UserRound }]) : []),
   ];
-
-  const executeRedirect = (course: Course) => {
-    const encodedCourseName = encodeURIComponent(course.title || '');
-    if (user) {
-        router.push(`/dashboard?course=${encodedCourseName}`);
-    } else {
-        router.push(`/login?course=${encodedCourseName}`);
-    }
-  };
   
   return (
     <div className="bg-background text-foreground">
       {/* Header */}
       <header className="bg-white/95 px-2 lg:px-6 py-3 flex justify-between items-center sticky top-0 z-20 shadow-sm">
         <Link href="/">
-          <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Logo" width={150} height={150} quality={100} className="h-14 w-auto" />
+          <Image src="https://raw.githubusercontent.com/shuyaib105/syllabuserbaire/refs/heads/main/ei_1766508088751-removebg-preview.png" alt="Logo" width={200} height={56} quality={100} className="h-14 w-auto" />
         </Link>
         
         {/* Desktop Navigation */}
@@ -211,13 +200,9 @@ export default function Home() {
                                           <Link href={`/courses/${course.slug}`} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'font-tiro-bangla')}>
                                           বিস্তারিত
                                           </Link>
-                                          <button
-                                              onClick={() => executeRedirect(course)}
-                                              disabled={course.disabled}
-                                              className={cn(buttonVariants({ size: 'sm' }), 'bg-primary hover:bg-yellow-400 text-black font-montserrat font-bold')}
-                                          >
+                                          <Link href={`/courses/${course.slug}`} className={cn(buttonVariants({ size: 'sm' }), 'bg-primary hover:bg-yellow-400 text-black font-montserrat font-bold')}>
                                               Enroll Now
-                                          </button>
+                                          </Link>
                                       </div>
                                   </div>
                                 </div>
@@ -271,5 +256,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
