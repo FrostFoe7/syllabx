@@ -156,19 +156,6 @@ export default function CourseEditPage() {
       setIsSaving(false);
     }
   };
-      toast({ title: 'Success', description: 'Course updated successfully' });
-      router.push('/admin/courses');
-    } catch (error) {
-      const appErr = error as { message?: string };
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: appErr.message || 'Failed to update course',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   if (isLoading) {
     return (
