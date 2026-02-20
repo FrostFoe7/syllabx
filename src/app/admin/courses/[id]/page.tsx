@@ -88,7 +88,7 @@ export default function CourseEditPage() {
   }, [form.formState.errors]);
 
   React.useEffect(() => {
-    if (course) {
+    if (course && categories && categories.length > 0) {
       const currentPrice = course.price || 'FREE';
       const normalizedPrice = currentPrice.toUpperCase().trim();
       const isPaid = normalizedPrice !== 'FREE' && 
@@ -113,7 +113,7 @@ export default function CourseEditPage() {
         features: Array.isArray(course.features) ? course.features.join('\n') : '',
       });
     }
-  }, [course, form]);
+  }, [course, categories, form]);
 
   const onSubmit: SubmitHandler<CourseValues> = async (data) => {
     setIsSaving(true);
