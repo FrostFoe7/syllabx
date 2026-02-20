@@ -89,7 +89,7 @@ export default function CourseEditPage() {
 
   React.useEffect(() => {
     if (course) {
-      const currentPrice = course.price || '';
+      const currentPrice = course.price || 'FREE';
       const normalizedPrice = currentPrice.toUpperCase().trim();
       const isPaid = normalizedPrice !== 'FREE' && 
                      normalizedPrice !== 'EXPIRED' && 
@@ -101,16 +101,16 @@ export default function CourseEditPage() {
       const displayPrice = isPaid ? currentPrice.replace(/[^0-9]/g, '') : '';
       
       form.reset({
-        title: course.title,
+        title: course.title || '',
         slug: course.slug || '',
         pricingType: isPaid ? 'paid' : 'free',
         price: displayPrice,
-        description: course.description,
-        image: course.image,
+        description: course.description || '',
+        image: course.image || '',
         disabled: !!course.disabled,
         startDate: course.startDate || '',
-        categoryId: course.categoryId,
-        features: (course.features || []).join('\n'),
+        categoryId: course.categoryId || '',
+        features: Array.isArray(course.features) ? course.features.join('\n') : '',
       });
     }
   }, [course, form]);
@@ -268,7 +268,10 @@ export default function CourseEditPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        value={field.value || ""}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a category" />
@@ -277,6 +280,8 @@ export default function CourseEditPage() {
                         <SelectContent>
                           {!categories ? (
                               <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+                          ) : categories.length === 0 ? (
+                              <SelectItem value="none" disabled>No categories found</SelectItem>
                           ) : (
                             categories.map((cat) => (
                               <SelectItem key={cat.$id} value={cat.slug}>
