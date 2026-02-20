@@ -88,16 +88,15 @@ export default function CourseEditPage() {
   }, [form.formState.errors]);
 
   React.useEffect(() => {
-    if (course && categories && categories.length > 0) {
+    if (course) {
       const currentPrice = course.price || 'FREE';
       const normalizedPrice = currentPrice.toUpperCase().trim();
       const isPaid = normalizedPrice !== 'FREE' && 
                      normalizedPrice !== 'EXPIRED' && 
-                     normalizedPrice !== '' &&
-                     normalizedPrice !== '0' &&
+                     normalizedPrice !== '' && 
+                     normalizedPrice !== '0' && 
                      normalizedPrice !== '৳0';
       
-      // Extract only numbers from price for the input field
       const displayPrice = isPaid ? currentPrice.replace(/[^0-9]/g, '') : '';
       
       form.reset({
@@ -113,7 +112,7 @@ export default function CourseEditPage() {
         features: Array.isArray(course.features) ? course.features.join('\n') : '',
       });
     }
-  }, [course, categories, form]);
+  }, [course, form]);
 
   const onSubmit: SubmitHandler<CourseValues> = async (data) => {
     setIsSaving(true);
@@ -215,7 +214,11 @@ export default function CourseEditPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Pricing Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select 
+                        key={`pricing-${field.value}`}
+                        onValueChange={field.onChange} 
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select type" />
@@ -269,6 +272,7 @@ export default function CourseEditPage() {
                     <FormItem>
                       <FormLabel>Category</FormLabel>
                       <Select 
+                        key={`category-${field.value}-${categories?.length || 0}`}
                         onValueChange={field.onChange} 
                         value={field.value || ""}
                       >
@@ -278,10 +282,8 @@ export default function CourseEditPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {!categories ? (
+                          {!categories || categories.length === 0 ? (
                               <SelectItem value="loading" disabled>Loading categories...</SelectItem>
-                          ) : categories.length === 0 ? (
-                              <SelectItem value="none" disabled>No categories found</SelectItem>
                           ) : (
                             categories.map((cat) => (
                               <SelectItem key={cat.$id} value={cat.slug}>
