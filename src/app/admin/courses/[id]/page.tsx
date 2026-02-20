@@ -26,13 +26,15 @@ import { Switch } from '@/components/ui/switch';
 
 const courseSchema = z.object({
   title: z.string().min(3, 'Title is too short'),
+  slug: z.string().min(3, 'Slug is too short'),
   pricingType: z.enum(['free', 'paid']),
   price: z.string().optional(),
   description: z.string().min(10, 'Description is too short'),
   image: z.string().url('Invalid image URL'),
   disabled: z.boolean().default(false),
   startDate: z.string().optional(),
-  categoryId: z.string().min(1, 'Category ID is required'),
+  categoryId: z.string().min(1, 'Category is required'),
+  features: z.string().optional(),
 }).refine((data) => {
   if (data.pricingType === 'paid' && (!data.price || data.price.trim() === '')) {
     return false;
@@ -64,37 +66,51 @@ export default function CourseEditPage() {
     resolver: zodResolver(courseSchema),
     defaultValues: {
       title: '',
+      slug: '',
       pricingType: 'free',
       price: '',
       description: '',
       image: '',
       disabled: false,
       startDate: '',
-      categoryId: ''
+      categoryId: '',
+      features: '',
     }
   });
 
   const pricingType = form.watch('pricingType');
 
+  // Log form errors to console for debugging
+  React.useEffect(() => {
+    if (Object.keys(form.formState.errors).length > 0) {
+      console.log("Form Errors:", form.formState.errors);
+    }
+  }, [form.formState.errors]);
+
   React.useEffect(() => {
     if (course) {
       const currentPrice = course.price || '';
-      const isPaid = currentPrice.toUpperCase() !== 'FREE' && 
-                     currentPrice.toUpperCase() !== 'EXPIRED' && 
-                     currentPrice !== '';
+      const normalizedPrice = currentPrice.toUpperCase().trim();
+      const isPaid = normalizedPrice !== 'FREE' && 
+                     normalizedPrice !== 'EXPIRED' && 
+                     normalizedPrice !== '' &&
+                     normalizedPrice !== '0' &&
+                     normalizedPrice !== '৳0';
       
       // Extract only numbers from price for the input field
       const displayPrice = isPaid ? currentPrice.replace(/[^0-9]/g, '') : '';
       
       form.reset({
         title: course.title,
+        slug: course.slug || '',
         pricingType: isPaid ? 'paid' : 'free',
         price: displayPrice,
         description: course.description,
         image: course.image,
         disabled: !!course.disabled,
         startDate: course.startDate || '',
-        categoryId: course.categoryId
+        categoryId: course.categoryId,
+        features: (course.features || []).join('\n'),
       });
     }
   }, [course, form]);
@@ -108,20 +124,38 @@ export default function CourseEditPage() {
           finalPrice = `৳${cleanPrice}`;
       }
 
-      const updateData = {
-          ...data,
-          price: finalPrice
+      // Prepare payload
+      const payload = {
+          title: data.title,
+          slug: data.slug,
+          description: data.description,
+          price: finalPrice,
+          image: data.image,
+          disabled: data.disabled,
+          startDate: data.startDate,
+          categoryId: data.categoryId,
+          features: data.features ? data.features.split('\n').filter(f => f.trim()) : [],
       };
-      
-      // @ts-expect-error - removing pricingType which is not in the DB schema
-      delete updateData.pricingType;
 
       await databases.updateDocument(
         appwriteConfig.databaseId,
         appwriteConfig.coursesCollectionId,
         id,
-        updateData
+        payload
       );
+      toast({ title: 'Success', description: 'Course updated successfully' });
+      router.push('/admin/courses');
+    } catch (error) {
+      const appErr = error as { message?: string };
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: appErr.message || 'Failed to update course',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
       toast({ title: 'Success', description: 'Course updated successfully' });
       router.push('/admin/courses');
     } catch (error) {
@@ -230,6 +264,19 @@ export default function CourseEditPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
+                  name="slug"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>URL Slug</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="categoryId"
                   render={({ field }) => (
                     <FormItem>
@@ -256,6 +303,9 @@ export default function CourseEditPage() {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="startDate"
@@ -269,21 +319,20 @@ export default function CourseEditPage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="image"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Image URL</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
-
-              <FormField
-                control={form.control}
-                name="image"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Image URL</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}
@@ -293,6 +342,20 @@ export default function CourseEditPage() {
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={4} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="features"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Features (One per line)</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={4} placeholder="Feature 1&#10;Feature 2" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

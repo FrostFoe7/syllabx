@@ -131,8 +131,8 @@ export default function CourseDetailPage() {
         return;
     }
 
-    const price = course?.price?.toUpperCase() || '';
-    const isPaid = price !== 'FREE' && price !== 'EXPIRED' && price !== '';
+    const price = course?.price?.toUpperCase().trim() || '';
+    const isPaid = price !== 'FREE' && price !== 'EXPIRED' && price !== '' && price !== '0' && price !== '৳0';
     
     if (isPaid) {
         setShowRequestDialog(true);
