@@ -78,8 +78,13 @@ export default function CourseEditPage() {
 
   React.useEffect(() => {
     if (course) {
-      const isPaid = course.price !== 'FREE' && course.price !== 'EXPIRED';
-      const displayPrice = isPaid ? course.price.replace('৳', '').trim() : '';
+      const currentPrice = course.price || '';
+      const isPaid = currentPrice.toUpperCase() !== 'FREE' && 
+                     currentPrice.toUpperCase() !== 'EXPIRED' && 
+                     currentPrice !== '';
+      
+      // Extract only numbers from price for the input field
+      const displayPrice = isPaid ? currentPrice.replace(/[^0-9]/g, '') : '';
       
       form.reset({
         title: course.title,
@@ -229,18 +234,22 @@ export default function CourseEditPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a category" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories?.map((cat) => (
-                            <SelectItem key={cat.$id} value={cat.slug}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
+                          {!categories ? (
+                              <SelectItem value="loading" disabled>Loading categories...</SelectItem>
+                          ) : (
+                            categories.map((cat) => (
+                              <SelectItem key={cat.$id} value={cat.slug}>
+                                {cat.name}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />
