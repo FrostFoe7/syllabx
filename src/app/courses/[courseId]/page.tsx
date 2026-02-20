@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { CheckCircle, Calendar, UserRound, Info, Send, Menu, Printer, Home as HomeIcon, BookOpen, CreditCard, Phone, MessageSquare } from 'lucide-react';
+import { CheckCircle, Calendar, UserRound, Info, Send, Menu, Printer, Home as HomeIcon, BookOpen, CreditCard, Phone } from 'lucide-react';
 import { useUser, useCollection, appwriteConfig, useDatabases } from '@/appwrite';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
@@ -131,7 +131,8 @@ export default function CourseDetailPage() {
         return;
     }
 
-    const isPaid = course?.price !== 'FREE' && course?.price !== 'EXPIRED';
+    const price = course?.price?.toUpperCase() || '';
+    const isPaid = price !== 'FREE' && price !== 'EXPIRED' && price !== '';
     
     if (isPaid) {
         setShowRequestDialog(true);

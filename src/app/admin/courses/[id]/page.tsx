@@ -107,6 +107,9 @@ export default function CourseEditPage() {
           ...data,
           price: finalPrice
       };
+      
+      // @ts-expect-error - removing pricingType which is not in the DB schema
+      delete updateData.pricingType;
 
       await databases.updateDocument(
         appwriteConfig.databaseId,
