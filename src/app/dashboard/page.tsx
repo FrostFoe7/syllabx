@@ -39,7 +39,8 @@ export default function DashboardCoursesPage() {
       const courseObj = allCourses?.find(c => c.title === decodedCourseName || c.$id === decodedCourseName);
       
       // IMPORTANT: Only auto-enroll if it's FREE
-      if (courseObj && (courseObj.price !== 'FREE')) {
+      const isPaid = !(['FREE', '0', '৳0', ''] as (string | undefined)[]).includes(courseObj?.price);
+      if (courseObj && isPaid) {
           router.replace('/dashboard');
           return;
       }

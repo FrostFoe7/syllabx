@@ -132,7 +132,12 @@ export default function CourseDetailPage() {
     }
 
     const price = course?.price?.toUpperCase().trim() || '';
-    const isPaid = price !== 'FREE' && price !== 'EXPIRED' && price !== '' && price !== '0' && price !== '৳0';
+    const isPaid = price !== 'FREE' && 
+                   price !== 'EXPIRED' && 
+                   price !== '' && 
+                   price !== '0' && 
+                   price !== '৳0' &&
+                   !price.includes('FREE');
     
     if (isPaid) {
         setShowRequestDialog(true);
