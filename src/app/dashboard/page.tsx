@@ -34,10 +34,10 @@ export default function DashboardCoursesPage() {
       }
 
       const decodedCourseName = decodeURIComponent(courseToEnroll);
-      
+
       // Find course by title to get the ID
       const courseObj = allCourses?.find(c => c.title === decodedCourseName || c.$id === decodedCourseName);
-      
+
       // IMPORTANT: Only auto-enroll if it's FREE
       const isPaid = !(['FREE', '0', '৳0', ''] as (string | undefined)[]).includes(courseObj?.price);
       if (courseObj && isPaid) {
@@ -45,11 +45,11 @@ export default function DashboardCoursesPage() {
           return;
       }
 
-      const courseIdToEnroll = courseObj ? courseObj.$id : decodedCourseName; 
+      const courseIdToEnroll = courseObj ? courseObj.$id : decodedCourseName;
 
       const collectionId = appwriteConfig.usersCollectionId;
       const documentId = user.$id;
-      
+
       const currentEnrollments = userData?.enrolledCourses || [];
 
       // Check if already enrolled using data from our hook (check both ID and Name to be safe)
@@ -90,9 +90,6 @@ export default function DashboardCoursesPage() {
             }
           );
         }
-        
-        // Refresh the global user state after update
-        await refreshUser();
 
         toast({
           title: "Success",
@@ -106,7 +103,10 @@ export default function DashboardCoursesPage() {
               description: err.message || "There was a problem enrolling in the course.",
           });
       } finally {
-        // Clean up URL
+        // Refresh the global user state after update AND then clean up URL
+        await refreshUser();
+        // Small delay to allow query to refetch
+        await new Promise(resolve => setTimeout(resolve, 500));
         router.replace('/dashboard');
       }
     };

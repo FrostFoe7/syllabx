@@ -76,6 +76,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         },
         enabled: !!currentAccount,
         retry: false,
+        staleTime: 0,
     });
 
     // 3. Check Admin Status (Dependent on Account)
